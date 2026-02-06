@@ -33,6 +33,15 @@ build.zig.zon    # Package manifest
 - Extensible plugin system
 - MCP connector for AI agent integration
 
+## Slash Commands
+
+Zig dev: `/zig-test`, `/zig-check`, `/zig-build`, `/zig-debug`
+OSS: `/release`, `/changelog`, `/issue-triage`, `/contrib-guide`
+
+## Hooks
+
+- `PostToolUse` on `Edit|Write`: auto-runs `zig fmt` on `.zig` files via `.claude/hooks/zig-fmt.sh`
+
 ## Reference Projects
 
 - [lazygit](https://github.com/jesseduffield/lazygit)
