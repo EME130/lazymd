@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "command": "filepath=\"$CLAUDE_FILE_PATH\"; if echo \"$filepath\" | grep -q '\\.zig$'; then zig fmt \"$filepath\" 2>/dev/null || true; fi"
+      }
+    ]
+  }
+}
