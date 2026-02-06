@@ -2,14 +2,27 @@
 
 Terminal-based markdown editor written in Zig. Inspired by lazygit/lazydocker.
 
-## Project Status
-
-Early planning phase - no code implemented yet.
-
 ## Tech Stack
 
-- Language: Zig
+- Language: Zig (0.13.0+)
 - File format: `.rndm` (100% backward compatible with `.md`)
+
+## Build Commands
+
+```bash
+zig build        # Build the project
+zig build run    # Run the editor
+zig build test   # Run tests
+```
+
+## Project Structure
+
+```
+src/
+  main.zig       # Entry point
+build.zig        # Build configuration
+build.zig.zon    # Package manifest
+```
 
 ## Planned Features
 
@@ -19,15 +32,6 @@ Early planning phase - no code implemented yet.
 - Markdown preview
 - Extensible plugin system
 - MCP connector for AI agent integration
-
-## Build Commands
-
-```bash
-# TBD - will use zig build system
-zig build        # Build the project
-zig build run    # Run the editor
-zig build test   # Run tests
-```
 
 ## Reference Projects
 
