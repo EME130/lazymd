@@ -1,0 +1,8 @@
+# Zig build artifacts
+zig-out/
+zig-cache/
+.zig-cache/
+.scrach
+
+# Local Claude config
+.claude.local.md
