@@ -1,0 +1,14 @@
+.{
+    .fingerprint = 0x4aebeb4e93594792,
+    .name = .lazy_md,
+    .version = "0.1.0",
+    .minimum_zig_version = "0.15.1",
+
+    .dependencies = .{},
+
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
