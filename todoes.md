@@ -1,14 +1,1 @@
-* we need to plan the project
-* we need to design the project
-* we need to implement the project
-* we need to test the project
-* we need to deploy the project
-* we need to document the project
-* we need to review the project
-* we need to launch the project
-* we need to maintain the project
-* we need to update the project
-* we need to keep the loop on 
-* we need to iterate the loop
-* we need to iterate the loop again
-* we need to iterate the loop again and again ...
+"*it should be able to see the preview of md files in terminal (with proper ascii kinda style, currently there is no difference between privew and editor), * it will be awesome if we include mouse support on pointer device supported terminal emulators, * it should have extensive support for plugins, so that community can build plugins on top of this, * include proper how-to for making own plugin, * we can try to include task-warrior-tui as our first plugin (low priority), * create landing page lazymd.com,*create a documentation page for lazymd.com which should follow standard documentation strutucture for this kinda tool, * also needed ci/cd pipelines, *update readme with actual guides and how-tos and some screen shots if possible" --max-iterations 113 --completion-promise "We are good to launch lazymd captain"

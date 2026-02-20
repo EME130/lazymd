@@ -131,6 +131,13 @@ pub fn byteAt(self: *const Self, pos: usize) u8 {
     return self.data[pos + self.gapSize()];
 }
 
+/// Returns full buffer content as a contiguous slice.
+/// Moves the gap to the end so data is contiguous.
+pub fn getContent(self: *Self) []const u8 {
+    self.moveGap(self.length());
+    return self.data[0..self.gap_start];
+}
+
 // ── Editing ───────────────────────────────────────────────────────────
 
 pub fn insertChar(self: *Self, pos: usize, ch: u8) !void {
