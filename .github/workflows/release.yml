@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-linux
+            artifact: lazy-md-linux-x86_64
+          - os: macos-latest
+            target: aarch64-macos
+            artifact: lazy-md-macos-aarch64
+          - os: macos-13
+            target: x86_64-macos
+            artifact: lazy-md-macos-x86_64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.15.1
+
+      - name: Build release
+        run: zig build -Doptimize=ReleaseSafe
+
+      - name: Package
+        run: |
+          cp zig-out/bin/lazy-md lazy-md
+          tar czf ${{ matrix.artifact }}.tar.gz lazy-md
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}.tar.gz
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            lazy-md-linux-x86_64/lazy-md-linux-x86_64.tar.gz
+            lazy-md-macos-aarch64/lazy-md-macos-aarch64.tar.gz
+            lazy-md-macos-x86_64/lazy-md-macos-x86_64.tar.gz
+          generate_release_notes: true

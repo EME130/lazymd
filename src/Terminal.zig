@@ -104,16 +104,22 @@ pub fn init(allocator: std.mem.Allocator) !Self {
 
     try self.buf.ensureTotalCapacity(allocator, 4096);
 
-    // Enter alternate screen, hide cursor
+    // Enter alternate screen, hide cursor, enable mouse
     try self.writeStr("\x1b[?1049h");
     try self.writeStr("\x1b[?25l");
+    try self.writeStr("\x1b[?1000h"); // Enable mouse click tracking
+    try self.writeStr("\x1b[?1002h"); // Enable mouse drag tracking
+    try self.writeStr("\x1b[?1006h"); // Enable SGR extended mouse mode
     try self.flush();
 
     return self;
 }
 
 pub fn deinit(self: *Self) void {
-    // Show cursor, leave alternate screen
+    // Disable mouse, show cursor, leave alternate screen
+    self.writeStr("\x1b[?1006l") catch {};
+    self.writeStr("\x1b[?1002l") catch {};
+    self.writeStr("\x1b[?1000l") catch {};
     self.writeStr("\x1b[?25h") catch {};
     self.writeStr("\x1b[?1049l") catch {};
     self.flush() catch {};

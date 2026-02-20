@@ -2,6 +2,7 @@ const std = @import("std");
 const Renderer = @import("../Renderer.zig");
 const Terminal = @import("../Terminal.zig");
 const Editor = @import("../Editor.zig");
+const Preview = @import("Preview.zig");
 const Self = @This();
 
 pub const Panel = enum {
@@ -82,23 +83,24 @@ pub fn cyclePanel(self: *Self) void {
 // ── Rendering ─────────────────────────────────────────────────────────
 
 pub fn renderChrome(self: *Self, renderer: *Renderer) void {
+    const tc = @import("../themes.zig").currentColors();
     // Title bar
-    renderer.fillRow(self.title_rect.y, ' ', .bright_white, .blue, .{});
+    renderer.fillRow(self.title_rect.y, ' ', tc.title_fg, tc.title_bg, .{});
     const title = " lazy-md v0.1.0";
-    renderer.putStr(0, 0, title, .bright_white, .blue, .{ .bold = true });
+    renderer.putStr(0, 0, title, tc.title_fg, tc.title_bg, .{ .bold = true });
 
     // Keyboard hints on title bar (right-aligned)
     const hints = "Tab:panels  1:tree  2:preview  :q quit ";
     if (hints.len < self.width) {
-        renderer.putStr(self.width -| @as(u16, @intCast(hints.len)), 0, hints, .bright_cyan, .blue, .{});
+        renderer.putStr(self.width -| @as(u16, @intCast(hints.len)), 0, hints, tc.border_active, tc.title_bg, .{});
     }
 
     // Panel borders
     if (self.show_file_tree and self.tree_rect.w > 0) {
-        renderer.drawVLine(self.tree_rect.x + self.tree_rect.w -| 1, self.tree_rect.y, self.tree_rect.h, .bright_black, .default);
+        renderer.drawVLine(self.tree_rect.x + self.tree_rect.w -| 1, self.tree_rect.y, self.tree_rect.h, tc.border, .default);
     }
     if (self.show_preview and self.preview_rect.w > 0) {
-        renderer.drawVLine(self.preview_rect.x, self.preview_rect.y, self.preview_rect.h, .bright_black, .default);
+        renderer.drawVLine(self.preview_rect.x, self.preview_rect.y, self.preview_rect.h, tc.border, .default);
     }
 }
 
@@ -106,11 +108,12 @@ pub fn renderFileTree(self: *Self, renderer: *Renderer, entries: []const FileEnt
     if (!self.show_file_tree) return;
 
     const r = self.tree_rect;
+    const tc = @import("../themes.zig").currentColors();
     const is_active = self.active_panel == .file_tree;
-    const border_fg: Terminal.Color = if (is_active) .bright_cyan else .bright_black;
+    const border_fg: Terminal.Color = if (is_active) tc.border_active else tc.border;
 
     // Panel header
-    renderer.putStr(r.x + 1, r.y, " Files ", .bright_white, .default, .{ .bold = true });
+    renderer.putStr(r.x + 1, r.y, " Files ", tc.title_fg, .default, .{ .bold = true });
     renderer.drawVLine(r.x + r.w -| 1, r.y, r.h, border_fg, .default);
 
     // File entries
@@ -125,42 +128,20 @@ pub fn renderFileTree(self: *Self, renderer: *Renderer, entries: []const FileEnt
     }
 }
 
-pub fn renderPreview(self: *Self, renderer: *Renderer, editor: *Editor) void {
+pub fn renderPreview(self: *Self, renderer: *Renderer, editor: *Editor, preview: *Preview) void {
     if (!self.show_preview) return;
 
     const r = self.preview_rect;
+    const tc = @import("../themes.zig").currentColors();
     const is_active = self.active_panel == .preview;
-    const border_fg: Terminal.Color = if (is_active) .bright_cyan else .bright_black;
+    const border_fg: Terminal.Color = if (is_active) tc.border_active else tc.border;
 
     // Panel border and header
     renderer.drawVLine(r.x, r.y, r.h, border_fg, .default);
-    renderer.putStr(r.x + 1, r.y, " Preview ", .bright_white, .default, .{ .bold = true });
+    renderer.putStr(r.x + 1, r.y, " Preview ", tc.title_fg, .default, .{ .bold = true });
 
-    // Simple preview: render markdown with basic formatting hints
-    const content_x = r.x + 2;
-    const content_w = if (r.w > 3) r.w - 3 else 1;
-
-    var preview_ctx: @import("../markdown/syntax.zig").LineContext = .{};
-    var spans: std.ArrayList(@import("../markdown/syntax.zig").Span) = .{};
-    defer spans.deinit(editor.allocator);
-
-    for (0..r.h -| 1) |screen_row| {
-        const buf_row = editor.scroll_row + screen_row;
-        if (buf_row >= editor.buffer.lineCount()) break;
-        const y = r.y + 1 + @as(u16, @intCast(screen_row));
-        const line = editor.buffer.getLine(buf_row);
-
-        @import("../markdown/syntax.zig").tokenizeLine(editor.allocator, line, &preview_ctx, &spans) catch continue;
-
-        if (spans.items.len == 0) continue;
-
-        // Render based on primary token
-        const primary = spans.items[0].token;
-        const fg = @import("../markdown/syntax.zig").Theme.getFg(primary);
-        const style = @import("../markdown/syntax.zig").Theme.getStyle(primary);
-
-        renderer.putStrTrunc(content_x, y, line, content_w, fg, .default, style);
-    }
+    // Rendered markdown preview
+    preview.render(renderer, editor, r);
 }
 
 pub const FileEntry = struct {
