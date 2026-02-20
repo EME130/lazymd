@@ -23,6 +23,9 @@ src/
   mcp/
     Server.zig       # MCP server (JSON-RPC 2.0 over stdio)
     tools.json       # Tool definitions (embedded at compile time)
+  nav/
+    Navigator.zig        # Navigation vtable interface (switchable backend)
+    BuiltinNavigator.zig # Built-in implementation using Buffer
 build.zig            # Build configuration
 build.zig.zon        # Package manifest
 ```
@@ -36,7 +39,17 @@ lazy-md --mcp-server              # Start MCP server
 lazy-md --mcp-server myfile.md    # Start with file preloaded
 ```
 
-**9 tools exposed**: `open_file`, `read_document`, `write_document`, `list_headings`, `edit_section`, `insert_text`, `delete_lines`, `search_content`, `get_structure`
+**15 tools exposed**:
+
+Document tools: `open_file`, `read_document`, `write_document`, `list_headings`, `edit_section`, `insert_text`, `delete_lines`, `search_content`, `get_structure`
+
+Navigation tools (via switchable `Navigator` vtable):
+- `read_section` — read section by heading path (e.g. `"Plan/Step 1/Subtask A"`)
+- `list_tasks` — list task checkboxes, optionally scoped to a section and filtered by status
+- `update_task` — toggle a task checkbox done/pending
+- `get_breadcrumb` — get heading hierarchy for a line (e.g. `"Plan > Step 1 > Subtask A"`)
+- `move_section` — relocate a section after/before another heading
+- `read_section_range` — read numbered lines from a section with optional offset/limit
 
 ### Claude Code
 ```bash
