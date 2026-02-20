@@ -25,6 +25,7 @@ pub const TokenType = enum {
     strikethrough,
     task_checkbox,
     html_tag,
+    wiki_link,
 };
 
 pub const Span = struct {
@@ -34,27 +35,31 @@ pub const Span = struct {
 };
 
 pub const Theme = struct {
+    const themes = @import("../themes.zig");
+
     pub fn getFg(token: TokenType) Terminal.Color {
+        const c = themes.currentColors();
         return switch (token) {
-            .h1 => .bright_cyan,
-            .h2 => .bright_green,
-            .h3 => .bright_yellow,
-            .h4 => .bright_blue,
-            .h5 => .bright_magenta,
-            .h6 => .cyan,
-            .bold, .bold_italic => .bright_white,
-            .italic => .white,
-            .code_inline, .code_block, .code_block_marker => .yellow,
-            .link_text => .bright_blue,
-            .link_url => .blue,
-            .image_marker => .bright_magenta,
-            .list_bullet, .list_number => .bright_magenta,
-            .blockquote => .bright_black,
-            .hr => .bright_black,
-            .strikethrough => .bright_black,
-            .task_checkbox => .bright_yellow,
-            .html_tag => .bright_black,
-            .normal => .default,
+            .h1 => c.h1,
+            .h2 => c.h2,
+            .h3 => c.h3,
+            .h4 => c.h4,
+            .h5 => c.h5,
+            .h6 => c.h6,
+            .bold, .bold_italic => c.bold,
+            .italic => c.italic,
+            .code_inline, .code_block, .code_block_marker => c.code,
+            .link_text => c.link,
+            .link_url => c.link_url,
+            .image_marker => c.list_marker,
+            .list_bullet, .list_number => c.list_marker,
+            .blockquote => c.blockquote,
+            .hr => c.hr,
+            .strikethrough => c.strikethrough,
+            .task_checkbox => c.checkbox,
+            .html_tag => c.text_muted,
+            .wiki_link => c.link,
+            .normal => c.text,
         };
     }
 
@@ -69,6 +74,7 @@ pub const Theme = struct {
             .code_inline, .code_block, .code_block_marker => .{},
             .link_text => .{ .underline = true },
             .link_url => .{ .dim = true },
+            .wiki_link => .{ .underline = true, .bold = true },
             .strikethrough => .{ .strikethrough = true },
             .blockquote => .{ .italic = true },
             .hr => .{ .dim = true },
@@ -77,10 +83,11 @@ pub const Theme = struct {
     }
 
     pub fn getBg(token: TokenType) Terminal.Color {
+        const c = themes.currentColors();
         return switch (token) {
-            .code_inline => .{ .fixed = 236 },
-            .code_block => .{ .fixed = 235 },
-            .code_block_marker => .{ .fixed = 235 },
+            .code_inline => c.code_bg,
+            .code_block => c.code_block_bg,
+            .code_block_marker => c.code_block_bg,
             else => .default,
         };
     }
@@ -232,6 +239,17 @@ fn tokenizeInline(allocator: std.mem.Allocator, line: []const u8, start: usize, 
             }
         }
 
+        // Wiki-links [[target]] or [[target|display]]
+        if (i + 1 < end and line[i] == '[' and line[i + 1] == '[') {
+            if (findWikiLinkEnd(line, i + 2, end)) |wl_end| {
+                if (i > text_start) try spans.append(allocator, .{ .start = text_start, .end = i, .token = .normal });
+                try spans.append(allocator, .{ .start = i, .end = wl_end, .token = .wiki_link });
+                i = wl_end;
+                text_start = i;
+                continue;
+            }
+        }
+
         // Links
         if (line[i] == '[') {
             if (parseLink(line, i, end)) |link| {
@@ -268,7 +286,7 @@ fn parseHeader(line: []const u8) ?u8 {
     return null;
 }
 
-fn isHorizontalRule(line: []const u8) bool {
+pub fn isHorizontalRule(line: []const u8) bool {
     if (line.len < 3) return false;
     var count: usize = 0;
     const ch = line[0];
@@ -315,6 +333,15 @@ fn findClosing(line: []const u8, start: usize, end: usize, marker: []const u8) ?
 }
 
 const LinkResult = struct { text_end: usize, url_end: usize };
+
+fn findWikiLinkEnd(line: []const u8, start: usize, end: usize) ?usize {
+    var i = start;
+    while (i + 1 < end) : (i += 1) {
+        if (line[i] == ']' and line[i + 1] == ']') return i + 2;
+        if (line[i] == '\n') return null;
+    }
+    return null;
+}
 
 fn parseLink(line: []const u8, start: usize, end: usize) ?LinkResult {
     var i = start + 1;

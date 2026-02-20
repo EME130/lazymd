@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation — lazy-md</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="docs.css">
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="/" class="nav-brand">lazy-md</a>
+            <div class="nav-links">
+                <a href="index.html#features">Features</a>
+                <a href="index.html#install">Install</a>
+                <a href="docs.html" class="active">Docs</a>
+                <a href="https://github.com/user/lazy-md" class="nav-github">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-layout">
+        <aside class="docs-sidebar">
+            <div class="sidebar-section">
+                <h4>Getting Started</h4>
+                <a href="#installation">Installation</a>
+                <a href="#quick-start">Quick Start</a>
+                <a href="#first-file">Your First File</a>
+            </div>
+            <div class="sidebar-section">
+                <h4>Usage</h4>
+                <a href="#modes">Editing Modes</a>
+                <a href="#navigation">Navigation</a>
+                <a href="#editing">Editing</a>
+                <a href="#commands">Commands</a>
+                <a href="#panels">Panels & Layout</a>
+                <a href="#mouse">Mouse Support</a>
+            </div>
+            <div class="sidebar-section">
+                <h4>Configuration</h4>
+                <a href="#file-formats">File Formats</a>
+                <a href="#themes">Themes</a>
+            </div>
+            <div class="sidebar-section">
+                <h4>Plugins</h4>
+                <a href="#plugin-overview">Overview</a>
+                <a href="#plugin-catalog">Plugin Catalog (62)</a>
+                <a href="#plugin-development">Developing Plugins</a>
+                <a href="#plugin-api">API Reference</a>
+            </div>
+            <div class="sidebar-section">
+                <h4>Architecture</h4>
+                <a href="#architecture">System Design</a>
+                <a href="#modules">Module Reference</a>
+            </div>
+            <div class="sidebar-section">
+                <h4>Contributing</h4>
+                <a href="#contributing">How to Contribute</a>
+                <a href="#building">Building from Source</a>
+                <a href="#testing">Running Tests</a>
+            </div>
+        </aside>
+
+        <main class="docs-content">
+            <h1>Documentation</h1>
+
+            <!-- Getting Started -->
+            <section id="installation">
+                <h2>Installation</h2>
+                <h3>Prerequisites</h3>
+                <p>lazy-md requires <a href="https://ziglang.org/download/">Zig</a> version 0.15.1 or later.</p>
+
+                <h3>Build from source</h3>
+                <div class="code-block"><code>git clone https://github.com/user/lazy-md.git
+cd lazy-md
+zig build</code></div>
+                <p>The compiled binary is at <code>zig-out/bin/lazy-md</code>. Move it to your PATH:</p>
+                <div class="code-block"><code>cp zig-out/bin/lazy-md /usr/local/bin/</code></div>
+
+                <h3>Pre-built binaries</h3>
+                <p>Download pre-built binaries from <a href="https://github.com/user/lazy-md/releases">GitHub Releases</a>. Available for:</p>
+                <ul>
+                    <li>Linux x86_64</li>
+                    <li>macOS x86_64</li>
+                    <li>macOS ARM64 (Apple Silicon)</li>
+                </ul>
+            </section>
+
+            <section id="quick-start">
+                <h2>Quick Start</h2>
+                <div class="code-block"><code># Open a markdown file
+lazy-md README.md
+
+# Open in current directory (shows file tree)
+lazy-md
+
+# Create a new file
+lazy-md notes.md</code></div>
+                <p>Once inside the editor:</p>
+                <ol>
+                    <li>Press <kbd>i</kbd> to enter Insert mode</li>
+                    <li>Type your markdown content</li>
+                    <li>Press <kbd>Escape</kbd> to return to Normal mode</li>
+                    <li>Type <kbd>:w</kbd> and <kbd>Enter</kbd> to save</li>
+                    <li>Type <kbd>:q</kbd> and <kbd>Enter</kbd> to quit</li>
+                </ol>
+            </section>
+
+            <section id="first-file">
+                <h2>Your First File</h2>
+                <p>lazy-md supports standard Markdown (<code>.md</code>) and the custom <code>.rndm</code> format (which is 100% compatible with Markdown).</p>
+                <p>The editor opens with a three-panel layout:</p>
+                <ul>
+                    <li><strong>Left panel</strong> — File tree showing the current directory</li>
+                    <li><strong>Center panel</strong> — Editor with vim-like modal editing</li>
+                    <li><strong>Right panel</strong> — Live rendered preview of your markdown</li>
+                </ul>
+            </section>
+
+            <!-- Usage -->
+            <section id="modes">
+                <h2>Editing Modes</h2>
+                <p>lazy-md uses vim-style modal editing with three modes:</p>
+
+                <h3>Normal Mode</h3>
+                <p>The default mode. Used for navigation, commands, and switching to other modes. The status bar shows <span class="mode-badge normal">NORMAL</span>.</p>
+
+                <h3>Insert Mode</h3>
+                <p>For typing text. Enter with <kbd>i</kbd>, <kbd>a</kbd>, <kbd>o</kbd>, or <kbd>O</kbd>. Exit with <kbd>Escape</kbd>. Status bar shows <span class="mode-badge insert">INSERT</span>.</p>
+
+                <h3>Command Mode</h3>
+                <p>For executing commands. Enter with <kbd>:</kbd>. Status bar shows <span class="mode-badge command">COMMAND</span>.</p>
+            </section>
+
+            <section id="navigation">
+                <h2>Navigation</h2>
+                <table class="doc-table">
+                    <thead><tr><th>Key</th><th>Action</th></tr></thead>
+                    <tbody>
+                        <tr><td><kbd>h</kbd> <kbd>j</kbd> <kbd>k</kbd> <kbd>l</kbd></td><td>Move cursor left / down / up / right</td></tr>
+                        <tr><td><kbd>w</kbd></td><td>Jump to next word</td></tr>
+                        <tr><td><kbd>b</kbd></td><td>Jump to previous word</td></tr>
+                        <tr><td><kbd>e</kbd></td><td>Jump to end of word</td></tr>
+                        <tr><td><kbd>0</kbd></td><td>Go to beginning of line</td></tr>
+                        <tr><td><kbd>$</kbd></td><td>Go to end of line</td></tr>
+                        <tr><td><kbd>^</kbd></td><td>Go to first non-blank character</td></tr>
+                        <tr><td><kbd>g</kbd></td><td>Go to first line</td></tr>
+                        <tr><td><kbd>G</kbd></td><td>Go to last line</td></tr>
+                        <tr><td><kbd>Ctrl+D</kbd></td><td>Scroll half page down</td></tr>
+                        <tr><td><kbd>Ctrl+U</kbd></td><td>Scroll half page up</td></tr>
+                        <tr><td><kbd>Page Up</kbd> / <kbd>Page Down</kbd></td><td>Scroll full page</td></tr>
+                    </tbody>
+                </table>
+                <p>Most motions accept a count prefix. Type a number before the motion to repeat it (e.g., <kbd>5j</kbd> moves down 5 lines).</p>
+            </section>
+
+            <section id="editing">
+                <h2>Editing</h2>
+                <h3>Entering Insert Mode</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Key</th><th>Action</th></tr></thead>
+                    <tbody>
+                        <tr><td><kbd>i</kbd></td><td>Insert before cursor</td></tr>
+                        <tr><td><kbd>a</kbd></td><td>Insert after cursor</td></tr>
+                        <tr><td><kbd>I</kbd></td><td>Insert at beginning of line</td></tr>
+                        <tr><td><kbd>A</kbd></td><td>Insert at end of line</td></tr>
+                        <tr><td><kbd>o</kbd></td><td>Open new line below</td></tr>
+                        <tr><td><kbd>O</kbd></td><td>Open new line above</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>Deletion</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Key</th><th>Action</th></tr></thead>
+                    <tbody>
+                        <tr><td><kbd>x</kbd></td><td>Delete character under cursor</td></tr>
+                        <tr><td><kbd>dd</kbd></td><td>Delete entire line</td></tr>
+                        <tr><td><kbd>Backspace</kbd></td><td>Delete character before cursor (Insert mode)</td></tr>
+                        <tr><td><kbd>Delete</kbd></td><td>Delete character at cursor (Insert mode)</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>Undo / Redo</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Key</th><th>Action</th></tr></thead>
+                    <tbody>
+                        <tr><td><kbd>u</kbd></td><td>Undo last change</td></tr>
+                        <tr><td><kbd>Ctrl+R</kbd></td><td>Redo</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="commands">
+                <h2>Commands</h2>
+                <p>Enter Command mode by pressing <kbd>:</kbd> in Normal mode.</p>
+                <table class="doc-table">
+                    <thead><tr><th>Command</th><th>Action</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>:w</code></td><td>Save file</td></tr>
+                        <tr><td><code>:q</code></td><td>Quit (warns if unsaved changes)</td></tr>
+                        <tr><td><code>:q!</code></td><td>Force quit without saving</td></tr>
+                        <tr><td><code>:wq</code> or <code>:x</code></td><td>Save and quit</td></tr>
+                        <tr><td><code>:w &lt;path&gt;</code></td><td>Save as a different file</td></tr>
+                        <tr><td><code>:e &lt;path&gt;</code></td><td>Open a different file</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="panels">
+                <h2>Panels & Layout</h2>
+                <p>lazy-md features a 3-panel layout inspired by lazygit:</p>
+                <div class="code-block"><code>┌─────────────────────────────────────────────────┐
+│  lazy-md v0.1.0        Tab:panels  :q quit      │
+├──────────┬─────────────────────┬─────────────────┤
+│ Files    │  1  # Hello World   │ Preview         │
+│          │  2                   │                 │
+│ 📁 src   │  3  Some text here  │ Hello World     │
+│ 📄 README│  4                   │ ═══════════     │
+│          │  5  ## Section       │                 │
+│          │                      │ Some text here  │
+├──────────┴─────────────────────┴─────────────────┤
+│ NORMAL  README.md                    Ln 1, Col 1 │
+│                                                   │
+└───────────────────────────────────────────────────┘</code></div>
+
+                <table class="doc-table">
+                    <thead><tr><th>Key</th><th>Action</th></tr></thead>
+                    <tbody>
+                        <tr><td><kbd>Tab</kbd></td><td>Cycle focus between panels</td></tr>
+                        <tr><td><kbd>Alt+1</kbd></td><td>Toggle file tree panel</td></tr>
+                        <tr><td><kbd>Alt+2</kbd></td><td>Toggle preview panel</td></tr>
+                    </tbody>
+                </table>
+                <p>Panel widths are computed responsively based on terminal size. The editor panel is always visible and takes up remaining space.</p>
+            </section>
+
+            <section id="mouse">
+                <h2>Mouse Support</h2>
+                <p>lazy-md supports mouse input in terminal emulators that support SGR extended mouse mode (most modern terminals):</p>
+                <ul>
+                    <li><strong>Left click</strong> — Position cursor in the editor, or switch focus to clicked panel</li>
+                    <li><strong>Scroll wheel</strong> — Scroll the editor content up/down (3 lines per scroll)</li>
+                </ul>
+                <p>Mouse support is automatically enabled when the editor starts and disabled when it exits.</p>
+            </section>
+
+            <!-- Configuration -->
+            <section id="file-formats">
+                <h2>File Formats</h2>
+                <p>lazy-md supports two file formats:</p>
+                <ul>
+                    <li><code>.md</code> — Standard Markdown</li>
+                    <li><code>.rndm</code> — lazy-md's custom format, 100% backward compatible with Markdown</li>
+                </ul>
+                <p>Both formats receive full syntax highlighting and preview rendering.</p>
+            </section>
+
+            <!-- Themes -->
+            <section id="themes">
+                <h2>Themes</h2>
+                <p>lazy-md ships with <strong>12 built-in color themes</strong>. Switch themes using command mode:</p>
+                <table class="doc-table">
+                    <thead><tr><th>Command</th><th>Action</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>:theme</code></td><td>Show current theme</td></tr>
+                        <tr><td><code>:theme &lt;name&gt;</code></td><td>Switch to named theme</td></tr>
+                        <tr><td><code>:theme.cycle</code></td><td>Cycle to next theme</td></tr>
+                        <tr><td><code>:theme.list</code></td><td>List all available themes</td></tr>
+                    </tbody>
+                </table>
+                <h3>Available Themes</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Name</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>default</code></td><td>Default lazy-md theme (16-color terminal)</td></tr>
+                        <tr><td><code>dracula</code></td><td>Dracula dark theme</td></tr>
+                        <tr><td><code>gruvbox</code></td><td>Gruvbox retro groove</td></tr>
+                        <tr><td><code>nord</code></td><td>Arctic, north-bluish clean</td></tr>
+                        <tr><td><code>solarized</code></td><td>Solarized dark precision colors</td></tr>
+                        <tr><td><code>monokai</code></td><td>Monokai classic dark</td></tr>
+                        <tr><td><code>catppuccin</code></td><td>Catppuccin mocha soothing pastels</td></tr>
+                        <tr><td><code>tokyo-night</code></td><td>Tokyo Night vibrant dark</td></tr>
+                        <tr><td><code>one-dark</code></td><td>Atom One Dark</td></tr>
+                        <tr><td><code>rose-pine</code></td><td>Rose Pine all natural</td></tr>
+                        <tr><td><code>kanagawa</code></td><td>Kanagawa wave inspired by Hokusai</td></tr>
+                        <tr><td><code>everforest</code></td><td>Everforest comfortable green</td></tr>
+                    </tbody>
+                </table>
+                <p>Each theme defines colors for UI chrome, syntax highlighting, mode indicators, and preview rendering. Themes use RGB colors for truecolor terminals with fallback to 256-color.</p>
+            </section>
+
+            <!-- Plugins -->
+            <section id="plugin-overview">
+                <h2>Plugin System Overview</h2>
+                <p>lazy-md has an extensible plugin architecture that lets you:</p>
+                <ul>
+                    <li>Register custom commands</li>
+                    <li>Hook into editor events (file open/save, buffer changes, mode changes)</li>
+                    <li>Add custom UI panels</li>
+                    <li>Extend the status bar</li>
+                </ul>
+                <p>Plugins are Zig modules that implement the <code>Plugin</code> interface using a vtable pattern.</p>
+            </section>
+
+            <section id="plugin-catalog">
+                <h2>Plugin Catalog</h2>
+                <p>lazy-md ships with <strong>62 built-in plugins</strong> covering note-taking, productivity, integrations, and more. All plugins follow the vtable interface pattern.</p>
+
+                <h3>Core Editing</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Plugin</th><th>Commands</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>word-count</td><td><code>:wc</code></td><td>Word, line, and character counts</td></tr>
+                        <tr><td>outline</td><td><code>:outline</code> <code>:toc</code></td><td>Document outline / table of contents</td></tr>
+                        <tr><td>search</td><td><code>:search</code> <code>:search.replace</code> <code>:search.vault</code></td><td>Full-text search in file and vault</td></tr>
+                        <tr><td>bookmarks</td><td><code>:bm.set</code> <code>:bm.list</code> <code>:bm.clear</code></td><td>Bookmark positions in files</td></tr>
+                        <tr><td>command-palette</td><td><code>:palette</code> <code>:commands</code></td><td>Fuzzy command palette</td></tr>
+                        <tr><td>quick-switcher</td><td><code>:switcher</code> <code>:open</code></td><td>Fuzzy file switcher</td></tr>
+                        <tr><td>recent-files</td><td><code>:recent</code></td><td>Recently opened files list</td></tr>
+                        <tr><td>auto-complete</td><td><code>:autocomplete</code></td><td>Auto-complete for links and tags</td></tr>
+                        <tr><td>auto-link</td><td><code>:autolink</code></td><td>Auto-convert URLs to links</td></tr>
+                        <tr><td>checklist</td><td><code>:check</code> <code>:check.progress</code></td><td>Checklist management and progress</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>Writing Modes</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Plugin</th><th>Commands</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>zen-mode</td><td><code>:zen</code> <code>:zen.off</code></td><td>Distraction-free writing</td></tr>
+                        <tr><td>typewriter</td><td><code>:typewriter</code></td><td>Cursor always centered on screen</td></tr>
+                        <tr><td>focus-mode</td><td><code>:focus</code> <code>:focus.para</code> <code>:focus.sentence</code></td><td>Highlight current paragraph/sentence</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>Markdown Extensions</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Plugin</th><th>Commands</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>table-editor</td><td><code>:table</code> <code>:table.fmt</code> <code>:table.add-col</code> <code>:table.add-row</code></td><td>Table creation and formatting</td></tr>
+                        <tr><td>footnotes</td><td><code>:fn.add</code> <code>:fn.list</code></td><td>Footnote management</td></tr>
+                        <tr><td>citations</td><td><code>:cite</code> <code>:cite.bib</code> <code>:cite.list</code></td><td>Academic citations and BibTeX</td></tr>
+                        <tr><td>admonitions</td><td><code>:callout</code> <code>:callout.tip</code> <code>:callout.warn</code></td><td>Callout blocks (tip, warning, note)</td></tr>
+                        <tr><td>emoji</td><td><code>:emoji</code> <code>:emoji.search</code></td><td>Emoji shortcode insertion</td></tr>
+                        <tr><td>math</td><td><code>:math</code> <code>:math.insert</code></td><td>LaTeX math expression support</td></tr>
+                        <tr><td>mermaid</td><td><code>:mermaid</code> <code>:mermaid.insert</code></td><td>Mermaid diagram support</td></tr>
+                        <tr><td>frontmatter</td><td><code>:fm</code> <code>:fm.add</code> <code>:fm.edit</code></td><td>YAML frontmatter management</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>Note Management</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Plugin</th><th>Commands</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>templates</td><td><code>:tpl.meeting</code> <code>:tpl.daily</code> <code>:tpl.readme</code> <code>:tpl.blog</code></td><td>Document templates</td></tr>
+                        <tr><td>daily-notes</td><td><code>:daily</code> <code>:daily.yesterday</code> <code>:daily.tomorrow</code></td><td>Daily journal notes</td></tr>
+                        <tr><td>periodic-notes</td><td><code>:weekly</code> <code>:monthly</code></td><td>Weekly and monthly notes</td></tr>
+                        <tr><td>zettelkasten</td><td><code>:zk.new</code> <code>:zk.link</code> <code>:zk.index</code></td><td>Zettelkasten note-taking method</td></tr>
+                        <tr><td>note-refactor</td><td><code>:refactor.extract</code> <code>:refactor.split</code></td><td>Extract and split notes</td></tr>
+                        <tr><td>folder-notes</td><td><code>:folder.index</code> <code>:folder.create</code></td><td>Auto-generate folder index notes</td></tr>
+                        <tr><td>tag-manager</td><td><code>:tags</code> <code>:tags.search</code> <code>:tags.rename</code></td><td>Manage and search #tags</td></tr>
+                        <tr><td>backlinks</td><td><code>:backlinks</code></td><td>Find files linking to current note</td></tr>
+                        <tr><td>graph-view</td><td><code>:graph</code> <code>:graph.local</code></td><td>ASCII graph of note connections</td></tr>
+                        <tr><td>random-note</td><td><code>:random</code></td><td>Open a random note</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>Productivity</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Plugin</th><th>Commands</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>pomodoro</td><td><code>:pomo.start</code> <code>:pomo.stop</code> <code>:pomo.status</code></td><td>Pomodoro focus timer</td></tr>
+                        <tr><td>kanban</td><td><code>:kanban</code> <code>:kanban.add</code> <code>:kanban.move</code></td><td>Markdown-based kanban board</td></tr>
+                        <tr><td>habit-tracker</td><td><code>:habit</code> <code>:habit.check</code> <code>:habit.add</code></td><td>Daily habit tracking</td></tr>
+                        <tr><td>day-planner</td><td><code>:plan</code> <code>:plan.today</code> <code>:plan.template</code></td><td>Time-blocked daily planning</td></tr>
+                        <tr><td>meeting-notes</td><td><code>:meeting</code> <code>:meeting.new</code></td><td>Structured meeting notes</td></tr>
+                        <tr><td>journal</td><td><code>:journal</code> <code>:journal.new</code> <code>:journal.search</code></td><td>Chronological journal entries</td></tr>
+                        <tr><td>calendar</td><td><code>:cal</code> <code>:cal.today</code></td><td>Visual calendar navigation</td></tr>
+                        <tr><td>project-manager</td><td><code>:project</code> <code>:project.switch</code> <code>:project.new</code></td><td>Switch between project vaults</td></tr>
+                        <tr><td>flashcards</td><td><code>:flash</code> <code>:flash.review</code> <code>:flash.add</code></td><td>Spaced repetition flashcards</td></tr>
+                        <tr><td>reading-time</td><td><code>:reading-time</code></td><td>Estimate document reading time</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>Text Tools</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Plugin</th><th>Commands</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>snippet-manager</td><td><code>:snip</code> <code>:snip.add</code> <code>:snip.list</code></td><td>Reusable text snippets</td></tr>
+                        <tr><td>text-expander</td><td><code>:expand</code> <code>:expand.add</code></td><td>Shorthand text expansion</td></tr>
+                        <tr><td>linter</td><td><code>:lint</code> <code>:lint.fix</code></td><td>Markdown linting and style checks</td></tr>
+                        <tr><td>spell-check</td><td><code>:spell</code> <code>:spell.add</code> <code>:spell.ignore</code></td><td>Spell checking</td></tr>
+                        <tr><td>dictionary</td><td><code>:define</code></td><td>Word definition lookup</td></tr>
+                        <tr><td>thesaurus</td><td><code>:synonyms</code></td><td>Synonym and antonym lookup</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>Integrations</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Plugin</th><th>Commands</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>todoist</td><td><code>:todoist</code> <code>:todoist.add</code> <code>:todoist.sync</code> <code>:todoist.inbox</code></td><td>Todoist task integration</td></tr>
+                        <tr><td>slack</td><td><code>:slack</code> <code>:slack.send</code> <code>:slack.share</code></td><td>Slack messaging integration</td></tr>
+                        <tr><td>git-sync</td><td><code>:git</code> <code>:git.commit</code> <code>:git.push</code> <code>:git.pull</code></td><td>Git-based note synchronization</td></tr>
+                        <tr><td>mcp-connector</td><td><code>:mcp</code> <code>:mcp.connect</code> <code>:mcp.status</code></td><td>MCP protocol for AI agent access</td></tr>
+                        <tr><td>taskwarrior</td><td><code>:tw.list</code> <code>:tw.add</code> <code>:tw.done</code></td><td>TaskWarrior TUI integration</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>Export & Publishing</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Plugin</th><th>Commands</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>export-html</td><td><code>:export.html</code> <code>:export.pdf</code></td><td>Export to HTML and PDF</td></tr>
+                        <tr><td>publish</td><td><code>:publish</code> <code>:publish.build</code> <code>:publish.preview</code></td><td>Publish notes as static site</td></tr>
+                        <tr><td>slides</td><td><code>:slides</code> <code>:slides.start</code> <code>:slides.export</code></td><td>Terminal presentation slides</td></tr>
+                        <tr><td>web-clipper</td><td><code>:clip</code> <code>:clip.url</code></td><td>Clip web pages to markdown</td></tr>
+                        <tr><td>paste-image</td><td><code>:paste.img</code></td><td>Paste images from clipboard</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>Advanced</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Plugin</th><th>Commands</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>dataview</td><td><code>:dv</code> <code>:dv.query</code> <code>:dv.table</code></td><td>Query note metadata and frontmatter</td></tr>
+                        <tr><td>mind-map</td><td><code>:mindmap</code></td><td>ASCII mind map from headings</td></tr>
+                        <tr><td>version-history</td><td><code>:history</code> <code>:history.diff</code> <code>:history.restore</code></td><td>Document version tracking</td></tr>
+                        <tr><td>file-recovery</td><td><code>:recover</code> <code>:recover.list</code></td><td>Auto-save snapshots and crash recovery</td></tr>
+                        <tr><td>theme-chooser</td><td><code>:theme.chooser</code> <code>:theme.preview</code> <code>:theme.info</code></td><td>Interactive theme browser</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="plugin-development">
+                <h2>Developing Plugins</h2>
+                <p>See the full <a href="https://github.com/user/lazy-md/blob/main/docs/PLUGIN_GUIDE.md">Plugin Development Guide</a> for detailed instructions.</p>
+
+                <h3>Quick overview</h3>
+                <ol>
+                    <li>Create a Zig file in <code>src/plugins/</code></li>
+                    <li>Implement the plugin interface methods: <code>pluginInfo()</code>, <code>pluginInit()</code>, <code>pluginDeinit()</code>, <code>onEvent()</code>, <code>getCommands()</code></li>
+                    <li>Register your plugin in <code>main.zig</code> with <code>plugin.makePlugin()</code></li>
+                    <li>Build and test</li>
+                </ol>
+
+                <h3>Example: Hello World Plugin</h3>
+                <div class="code-block"><code>const plugin = @import("../plugin.zig");
+
+const Self = @This();
+
+pub fn pluginInfo(self: *Self) plugin.PluginInfo {
+    _ = self;
+    return .{
+        .name = "hello",
+        .version = "0.1.0",
+        .author = "You",
+        .description = "Says hello",
+    };
+}
+
+pub fn pluginInit(self: *Self, editor: *Editor) void {
+    _ = self;
+    editor.status.set("Hello plugin loaded!", false);
+}
+
+pub fn pluginDeinit(self: *Self) void { _ = self; }
+pub fn onEvent(self: *Self, event: *plugin.PluginEvent) void { _ = self; _ = event; }
+pub fn getCommands(self: *Self) []const plugin.CommandDef { _ = self; return &.{}; }</code></div>
+            </section>
+
+            <section id="plugin-api">
+                <h2>Plugin API Reference</h2>
+                <h3>EventType</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Event</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>file_open</code></td><td>A file was opened</td></tr>
+                        <tr><td><code>file_save</code></td><td>A file was saved</td></tr>
+                        <tr><td><code>file_close</code></td><td>A file was closed</td></tr>
+                        <tr><td><code>buffer_changed</code></td><td>Buffer content changed</td></tr>
+                        <tr><td><code>mode_changed</code></td><td>Vim mode changed</td></tr>
+                        <tr><td><code>cursor_moved</code></td><td>Cursor position changed</td></tr>
+                        <tr><td><code>command</code></td><td>A plugin command was invoked</td></tr>
+                        <tr><td><code>render</code></td><td>Render cycle</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>PluginInfo</h3>
+                <div class="code-block"><code>pub const PluginInfo = struct {
+    name: []const u8,
+    version: []const u8,
+    author: []const u8,
+    description: []const u8,
+};</code></div>
+
+                <h3>CommandDef</h3>
+                <div class="code-block"><code>pub const CommandDef = struct {
+    name: []const u8,
+    description: []const u8,
+    handler: *const fn (*PluginEvent) void,
+};</code></div>
+            </section>
+
+            <!-- Architecture -->
+            <section id="architecture">
+                <h2>System Design</h2>
+                <p>lazy-md is built with clean module separation:</p>
+                <div class="code-block"><code>main.zig  (Event Loop)
+  ├─ Terminal.zig    Raw mode, ANSI escape codes, colors
+  ├─ Input.zig       Key + mouse event parsing
+  ├─ Editor.zig      Vim modes, cursor, scroll
+  │   ├─ Buffer.zig  Gap buffer, undo/redo, file I/O
+  │   └─ markdown/syntax.zig  Tokenizer + theme
+  ├─ ui/Layout.zig   3-panel geometry
+  ├─ ui/Preview.zig  Rendered markdown preview
+  ├─ Renderer.zig    Double-buffered cell grid
+  └─ plugin.zig      Plugin system</code></div>
+
+                <h3>Key design decisions</h3>
+                <ul>
+                    <li><strong>Gap buffer</strong> — Efficient for insert/delete at cursor position</li>
+                    <li><strong>Double buffering</strong> — Diff-based rendering prevents flicker</li>
+                    <li><strong>Zero dependencies</strong> — Uses only Zig stdlib + POSIX</li>
+                    <li><strong>Vtable plugins</strong> — Type-erased interface for extensibility</li>
+                </ul>
+            </section>
+
+            <section id="modules">
+                <h2>Module Reference</h2>
+                <table class="doc-table">
+                    <thead><tr><th>Module</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>Terminal.zig</code></td><td>POSIX terminal control: raw mode, alternate screen, colors, styles</td></tr>
+                        <tr><td><code>Input.zig</code></td><td>Reads keyboard and mouse events, parses escape sequences</td></tr>
+                        <tr><td><code>Buffer.zig</code></td><td>Gap buffer with undo/redo stack and line tracking</td></tr>
+                        <tr><td><code>Editor.zig</code></td><td>Vim modal editing, cursor management, rendering</td></tr>
+                        <tr><td><code>Renderer.zig</code></td><td>Cell grid with diff-based flush to terminal</td></tr>
+                        <tr><td><code>ui/Layout.zig</code></td><td>3-panel layout computation and chrome rendering</td></tr>
+                        <tr><td><code>ui/Preview.zig</code></td><td>Markdown-to-ASCII preview rendering</td></tr>
+                        <tr><td><code>markdown/syntax.zig</code></td><td>Markdown tokenizer with 28 token types and color theme</td></tr>
+                        <tr><td><code>plugin.zig</code></td><td>Plugin interface, manager, and helper utilities</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Contributing -->
+            <section id="contributing">
+                <h2>How to Contribute</h2>
+                <ol>
+                    <li>Fork the repository</li>
+                    <li>Create a feature branch</li>
+                    <li>Make your changes</li>
+                    <li>Run <code>zig build test</code> to ensure all tests pass</li>
+                    <li>Run <code>zig fmt src/</code> to format your code</li>
+                    <li>Submit a pull request</li>
+                </ol>
+            </section>
+
+            <section id="building">
+                <h2>Building from Source</h2>
+                <div class="code-block"><code># Debug build
+zig build
+
+# Release build
+zig build -Doptimize=ReleaseSafe
+
+# Run directly
+zig build run -- myfile.md</code></div>
+            </section>
+
+            <section id="testing">
+                <h2>Running Tests</h2>
+                <div class="code-block"><code>zig build test</code></div>
+                <p>This runs all unit tests across all modules (Terminal, Input, Buffer, Editor, Renderer, Layout, Preview, syntax, and plugin system).</p>
+            </section>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>lazy-md is open source under the MIT License.</p>
+            <div class="footer-links">
+                <a href="https://github.com/user/lazy-md">GitHub</a>
+                <a href="index.html">Home</a>
+                <a href="https://github.com/user/lazy-md/issues">Issues</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -68,6 +68,8 @@ spans: std.ArrayList(syntax.Span) = .{},
 count: usize = 0,
 // Pending operator (d, c, y)
 pending_op: ?u21 = null,
+// Plugin manager pointer (set by main.zig)
+plugin_mgr: ?*@import("plugin.zig").PluginManager = null,
 
 // ── Init / Deinit ─────────────────────────────────────────────────────
 
@@ -94,6 +96,10 @@ pub fn openFile(self: *Self, path: []const u8) !void {
     self.cursor_col = 0;
     self.scroll_row = 0;
     self.status.set("File opened", false);
+    if (self.plugin_mgr) |pm| {
+        var event = @import("plugin.zig").PluginEvent{ .type = .file_open, .editor = self };
+        pm.broadcast(&event);
+    }
 }
 
 // ── Input Dispatch ────────────────────────────────────────────────────
@@ -105,6 +111,7 @@ pub fn handleEvent(self: *Self, event: Input.Event) !void {
             .insert => try self.handleInsert(key),
             .command => try self.handleCommand(key),
         },
+        .mouse => {},
         .resize => {},
         .none => {},
     }
@@ -380,7 +387,46 @@ fn executeCommand(self: *Self) !void {
                 self.status.set("Failed to open file", true);
             };
         }
+    } else if (std.mem.eql(u8, cmd, "theme")) {
+        const themes = @import("themes.zig");
+        const t = themes.currentTheme();
+        var msg_buf: [128]u8 = undefined;
+        const msg = std.fmt.bufPrint(&msg_buf, "Theme: {s} ({d}/{d})", .{ t.name, themes.current_theme_index + 1, themes.theme_count }) catch "Theme info unavailable";
+        self.status.set(msg, false);
+    } else if (std.mem.eql(u8, cmd, "theme.cycle") or std.mem.eql(u8, cmd, "theme.next")) {
+        const themes = @import("themes.zig");
+        themes.cycleTheme();
+        const t = themes.currentTheme();
+        var msg_buf: [128]u8 = undefined;
+        const msg = std.fmt.bufPrint(&msg_buf, "Theme: {s}", .{t.name}) catch "Theme changed";
+        self.status.set(msg, false);
+    } else if (std.mem.startsWith(u8, cmd, "theme ")) {
+        const themes = @import("themes.zig");
+        const name = std.mem.trimLeft(u8, cmd[6..], " ");
+        if (themes.findThemeByName(name)) |idx| {
+            themes.setTheme(idx);
+            var msg_buf: [128]u8 = undefined;
+            const msg = std.fmt.bufPrint(&msg_buf, "Theme: {s}", .{name}) catch "Theme set";
+            self.status.set(msg, false);
+        } else {
+            self.status.set("Unknown theme. Use :theme.cycle to browse", true);
+        }
+    } else if (std.mem.eql(u8, cmd, "theme.list")) {
+        self.status.set("Themes: default dracula gruvbox nord solarized monokai catppuccin tokyo-night one-dark rose-pine kanagawa everforest", false);
     } else {
+        // Try plugin commands
+        if (self.plugin_mgr) |pm| {
+            const space_idx = std.mem.indexOfScalar(u8, cmd, ' ');
+            const cmd_name = if (space_idx) |idx| cmd[0..idx] else cmd;
+            const cmd_args = if (space_idx) |idx| cmd[idx + 1 ..] else "";
+            var pe = @import("plugin.zig").PluginEvent{
+                .type = .command,
+                .editor = self,
+                .command_name = cmd_name,
+                .command_args = if (cmd_args.len > 0) cmd_args else null,
+            };
+            if (pm.executeCommand(cmd_name, &pe)) return;
+        }
         self.status.set("Unknown command", true);
     }
 }
@@ -546,6 +592,10 @@ fn save(self: *Self) !void {
     if (self.file_path) |path| {
         try self.buffer.saveFile(path);
         self.status.set("File saved", false);
+        if (self.plugin_mgr) |pm| {
+            var event = @import("plugin.zig").PluginEvent{ .type = .file_save, .editor = self };
+            pm.broadcast(&event);
+        }
     } else {
         self.status.set("No filename. Use :w <filename>", true);
     }
@@ -597,7 +647,8 @@ pub fn render(self: *Self, renderer: *Renderer) !void {
         // Line number
         var num_buf: [8]u8 = undefined;
         const num_str = std.fmt.bufPrint(&num_buf, "{d: >3} ", .{buf_row + 1}) catch "??? ";
-        const num_color: Terminal.Color = if (buf_row == self.cursor_row) .bright_white else .bright_black;
+        const tc_ = @import("themes.zig").currentColors();
+        const num_color: Terminal.Color = if (buf_row == self.cursor_row) tc_.gutter_active else tc_.gutter;
         renderer.putStr(vx, y, num_str, num_color, .default, .{});
 
         // Line content with syntax highlighting
@@ -636,8 +687,9 @@ pub fn render(self: *Self, renderer: *Renderer) !void {
 }
 
 pub fn renderStatusBar(self: *Self, renderer: *Renderer, y: u16) void {
+    const tc = @import("themes.zig").currentColors();
     // Fill status bar background
-    renderer.fillRow(y, ' ', .bright_white, .{ .fixed = 236 }, .{});
+    renderer.fillRow(y, ' ', tc.status_fg, tc.status_bg, .{});
 
     // Mode indicator
     const mode_str = switch (self.mode) {
@@ -646,24 +698,24 @@ pub fn renderStatusBar(self: *Self, renderer: *Renderer, y: u16) void {
         .command => " COMMAND ",
     };
     const mode_bg: Terminal.Color = switch (self.mode) {
-        .normal => .blue,
-        .insert => .green,
-        .command => .magenta,
+        .normal => tc.mode_normal_bg,
+        .insert => tc.mode_insert_bg,
+        .command => tc.mode_command_bg,
     };
-    renderer.putStr(0, y, mode_str, .bright_white, mode_bg, .{ .bold = true });
+    renderer.putStr(0, y, mode_str, tc.title_fg, mode_bg, .{ .bold = true });
 
     // Filename + dirty indicator
     const name = self.file_path orelse "[No File]";
     const dirty_str: []const u8 = if (self.buffer.dirty) " [+]" else "";
     var file_buf: [128]u8 = undefined;
     const file_str = std.fmt.bufPrint(&file_buf, " {s}{s}", .{ name, dirty_str }) catch " ???";
-    renderer.putStr(@intCast(mode_str.len), y, file_str, .white, .{ .fixed = 236 }, .{});
+    renderer.putStr(@intCast(mode_str.len), y, file_str, tc.status_fg, tc.status_bg, .{});
 
     // Position info (right-aligned)
     var pos_buf: [32]u8 = undefined;
     const pos_str = std.fmt.bufPrint(&pos_buf, "Ln {d}, Col {d} ", .{ self.cursor_row + 1, self.cursor_col + 1 }) catch "";
     if (pos_str.len < renderer.width) {
-        renderer.putStr(@intCast(renderer.width - @as(u16, @intCast(pos_str.len))), y, pos_str, .white, .{ .fixed = 236 }, .{});
+        renderer.putStr(@intCast(renderer.width - @as(u16, @intCast(pos_str.len))), y, pos_str, tc.status_fg, tc.status_bg, .{});
     }
 }
 
@@ -672,7 +724,8 @@ pub fn renderCommandBar(self: *Self, renderer: *Renderer, y: u16) void {
         renderer.putChar(0, y, ':', .bright_white, .default, .{ .bold = true });
         renderer.putStr(1, y, self.cmd_buf[0..self.cmd_len], .white, .default, .{});
     } else if (self.status.len > 0) {
-        const fg: Terminal.Color = if (self.status.is_error) .bright_red else .bright_green;
+        const tc2 = @import("themes.zig").currentColors();
+        const fg: Terminal.Color = if (self.status.is_error) tc2.err_color else tc2.success;
         renderer.putStr(0, y, self.status.slice(), fg, .default, .{});
     }
 }

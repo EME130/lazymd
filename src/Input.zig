@@ -54,8 +54,27 @@ pub const Key = struct {
     }
 };
 
+pub const MouseButton = enum {
+    left,
+    middle,
+    right,
+    scroll_up,
+    scroll_down,
+    release,
+};
+
+pub const Mouse = struct {
+    button: MouseButton,
+    x: u16, // 0-indexed column
+    y: u16, // 0-indexed row
+    ctrl: bool = false,
+    alt: bool = false,
+    shift: bool = false,
+};
+
 pub const Event = union(enum) {
     key: Key,
+    mouse: Mouse,
     resize: Terminal.Size,
     none,
 };
@@ -151,10 +170,18 @@ fn parseEscape(self: *Self) Event {
 }
 
 fn parseCsi(self: *Self) Event {
+    // Check for SGR mouse: ESC [ <
+    const first_peek = self.peekByte() orelse return .{ .key = .{ .code = .escape } };
+    if (first_peek == '<') {
+        _ = self.nextByte(); // consume '<'
+        return self.parseSgrMouse();
+    }
+
     var params: [4]u16 = .{ 0, 0, 0, 0 };
     var param_count: usize = 0;
 
     // Parse numeric params separated by ';'
+    // first_peek is already available and is a digit or other char
     while (true) {
         const b = self.peekByte() orelse break;
         if (b >= '0' and b <= '9') {
@@ -206,6 +233,54 @@ fn parseCsi(self: *Self) Event {
             else => .escape,
         },
     } };
+}
+
+// Parse SGR extended mouse: <Cb;Cx;Cy[Mm]
+fn parseSgrMouse(self: *Self) Event {
+    var params: [3]u16 = .{ 0, 0, 0 };
+    var param_idx: usize = 0;
+
+    while (true) {
+        const b = self.nextByte() orelse return .none;
+        if (b >= '0' and b <= '9') {
+            if (param_idx < params.len) {
+                params[param_idx] = params[param_idx] * 10 + @as(u16, b - '0');
+            }
+        } else if (b == ';') {
+            param_idx += 1;
+        } else if (b == 'M' or b == 'm') {
+            // M = press, m = release
+            const cb = params[0];
+            const cx = if (params[1] > 0) params[1] - 1 else 0; // 1-indexed to 0-indexed
+            const cy = if (params[2] > 0) params[2] - 1 else 0;
+            const is_release = b == 'm';
+
+            const button_bits = cb & 0x03;
+            const is_scroll = (cb & 64) != 0;
+
+            const button: MouseButton = if (is_release) .release else if (is_scroll) switch (button_bits) {
+                0 => .scroll_up,
+                1 => .scroll_down,
+                else => .scroll_up,
+            } else switch (button_bits) {
+                0 => .left,
+                1 => .middle,
+                2 => .right,
+                else => .release,
+            };
+
+            return .{ .mouse = .{
+                .button = button,
+                .x = cx,
+                .y = cy,
+                .ctrl = (cb & 16) != 0,
+                .alt = (cb & 8) != 0,
+                .shift = (cb & 4) != 0,
+            } };
+        } else {
+            return .none;
+        }
+    }
 }
 
 // ── Byte Helpers ──────────────────────────────────────────────────────
