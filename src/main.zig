@@ -7,6 +7,7 @@ const Renderer = @import("Renderer.zig");
 const Layout = @import("ui/Layout.zig");
 const Preview = @import("ui/Preview.zig");
 const plugin = @import("plugin.zig");
+const McpServer = @import("mcp/Server.zig");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -18,8 +19,31 @@ pub fn main() !void {
     defer std.process.argsFree(allocator, args);
 
     var file_path: ?[]const u8 = null;
-    if (args.len > 1) {
-        file_path = args[1];
+    var mcp_mode = false;
+    for (args[1..]) |arg| {
+        if (std.mem.eql(u8, arg, "--mcp-server") or std.mem.eql(u8, arg, "--mcp")) {
+            mcp_mode = true;
+        } else {
+            file_path = arg;
+        }
+    }
+
+    // MCP server mode: JSON-RPC 2.0 over stdio
+    if (mcp_mode) {
+        var buffer = try Buffer.init(allocator);
+        defer buffer.deinit();
+        var server = McpServer.init(allocator, &buffer);
+        defer server.deinit();
+
+        if (file_path) |path| {
+            server.buffer.loadFile(path) catch {};
+            const owned = try allocator.dupe(u8, path);
+            server.file_path_owned = owned;
+            server.file_path = owned;
+        }
+
+        try server.run();
+        return;
     }
 
     // Initialize terminal
@@ -290,4 +314,5 @@ test {
     _ = @import("plugins/note_rename.zig");
     _ = @import("plugins/vault_stats.zig");
     _ = @import("plugins/nested_tags.zig");
+    _ = @import("mcp/Server.zig");
 }

@@ -1,0 +1,123 @@
+{
+  "tools": [
+    {
+      "name": "open_file",
+      "description": "Open a markdown (.md) or rndm (.rndm) file for editing. The file becomes the active document for all subsequent operations.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path to the markdown file to open"
+          }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "read_document",
+      "description": "Read the full content of the currently open document. Returns the raw markdown text.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "write_document",
+      "description": "Save the current document to disk. Optionally specify a different path to save-as.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "File path to save to (defaults to the current file path)"
+          }
+        }
+      }
+    },
+    {
+      "name": "list_headings",
+      "description": "List all markdown headings (H1-H6) in the current document with their line numbers and levels.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "edit_section",
+      "description": "Replace the content of a markdown section (identified by heading). The heading line is preserved; only the body content between this heading and the next heading of equal or higher level is replaced.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "heading": {
+            "type": "string",
+            "description": "The heading text to find (case-insensitive, without # prefix)"
+          },
+          "content": {
+            "type": "string",
+            "description": "New content for the section body"
+          }
+        },
+        "required": ["heading", "content"]
+      }
+    },
+    {
+      "name": "insert_text",
+      "description": "Insert text at a specific line number or at the end of the document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to insert"
+          },
+          "line": {
+            "type": "integer",
+            "description": "Line number to insert before (1-indexed). Omit to append at end."
+          }
+        },
+        "required": ["text"]
+      }
+    },
+    {
+      "name": "delete_lines",
+      "description": "Delete one or more lines from the document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "start_line": {
+            "type": "integer",
+            "description": "First line to delete (1-indexed)"
+          },
+          "end_line": {
+            "type": "integer",
+            "description": "Last line to delete (1-indexed, inclusive). Defaults to start_line."
+          }
+        },
+        "required": ["start_line"]
+      }
+    },
+    {
+      "name": "search_content",
+      "description": "Search the document for lines matching a query (case-insensitive substring match). Returns matching lines with line numbers.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query string"
+          }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "get_structure",
+      "description": "Get document metadata and structural overview including line count, byte size, file path, modification status, and a hierarchical outline of all headings.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ]
+}

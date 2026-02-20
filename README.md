@@ -169,11 +169,62 @@ lazy-md supports an extensible plugin architecture. Plugins can:
 
 See the full [Plugin Development Guide](docs/PLUGIN_GUIDE.md) for examples and API reference.
 
+## AI Agent Integration (MCP Server)
+
+lazy-md is an [MCP](https://modelcontextprotocol.io/) server. AI coding agents (Claude Code, Gemini CLI, etc.) can connect over stdio and use lazy-md's markdown editing tools programmatically.
+
+```bash
+# Start as MCP server
+lazy-md --mcp-server
+
+# With a file preloaded
+lazy-md --mcp-server README.md
+```
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `open_file` | Open a .md/.rndm file |
+| `read_document` | Read full document content |
+| `write_document` | Save to disk |
+| `list_headings` | List all headings with line numbers |
+| `edit_section` | Replace content under a heading |
+| `insert_text` | Insert text at a line or end |
+| `delete_lines` | Delete line range |
+| `search_content` | Case-insensitive search |
+| `get_structure` | Document metadata + outline |
+
+### Connect from Claude Code
+
+```bash
+claude mcp add lazy-md -- /path/to/lazy-md --mcp-server
+```
+
+### Connect from Gemini CLI
+
+Add to `~/.gemini/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "lazy-md": {
+      "command": "/path/to/lazy-md",
+      "args": ["--mcp-server"]
+    }
+  }
+}
+```
+
+### Connect from any MCP client
+
+lazy-md speaks JSON-RPC 2.0 over stdin/stdout (MCP protocol version `2024-11-05`). Any MCP-compatible client can connect by spawning the process with `--mcp-server`.
+
 ## Architecture
 
 ```
 src/
-  main.zig               Entry point, CLI args, event loop
+  main.zig               Entry point, CLI args, TUI + MCP mode dispatch
   Terminal.zig            Raw mode, ANSI escape codes, colors, mouse
   Input.zig               Key + mouse event parsing, escape sequences
   Buffer.zig              Gap buffer, undo/redo, file I/O
@@ -183,6 +234,8 @@ src/
   ui/Layout.zig           3-panel layout engine
   ui/Preview.zig          Rendered markdown preview
   plugin.zig              Plugin system (interface, manager, helpers)
+  mcp/Server.zig          MCP server (JSON-RPC 2.0 over stdio)
+  mcp/tools.json          Tool definitions (embedded at compile time)
 ```
 
 ## Development
