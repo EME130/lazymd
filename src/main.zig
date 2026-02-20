@@ -137,6 +137,11 @@ pub fn main() !void {
                         else => {},
                     }
                 }
+                // Route keys to preview panel when active
+                if (layout.active_panel == .preview and editor.mode == .normal) {
+                    preview.handlePreviewKey(key);
+                    continue;
+                }
                 const old_mode = editor.mode;
                 try editor.handleEvent(event);
                 // Broadcast plugin events for mode changes
@@ -146,7 +151,7 @@ pub fn main() !void {
                 }
             },
             .mouse => |mouse| {
-                handleMouse(&editor, &layout, mouse);
+                handleMouse(&editor, &layout, mouse, &preview);
             },
             .resize => {
                 try renderer.resize();
@@ -157,7 +162,7 @@ pub fn main() !void {
     }
 }
 
-fn handleMouse(editor: *Editor, layout: *Layout, mouse: Input.Mouse) void {
+fn handleMouse(editor: *Editor, layout: *Layout, mouse: Input.Mouse, preview_panel: *Preview) void {
     const er = layout.editor_rect;
 
     switch (mouse.button) {
@@ -190,6 +195,8 @@ fn handleMouse(editor: *Editor, layout: *Layout, mouse: Input.Mouse) void {
                 mouse.y >= layout.preview_rect.y and mouse.y < layout.preview_rect.y + layout.preview_rect.h)
             {
                 layout.active_panel = .preview;
+                // Delegate to preview for fold toggle on indicator column
+                preview_panel.handleClick(mouse.x, mouse.y, layout.preview_rect);
             }
         },
         .scroll_up => {
@@ -315,4 +322,6 @@ test {
     _ = @import("plugins/vault_stats.zig");
     _ = @import("plugins/nested_tags.zig");
     _ = @import("mcp/Server.zig");
+    _ = @import("nav/Navigator.zig");
+    _ = @import("nav/BuiltinNavigator.zig");
 }

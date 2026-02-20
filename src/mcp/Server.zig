@@ -1,5 +1,7 @@
 const std = @import("std");
 const Buffer = @import("../Buffer.zig");
+const Navigator = @import("../nav/Navigator.zig");
+const BuiltinNavigator = @import("../nav/BuiltinNavigator.zig");
 const Allocator = std.mem.Allocator;
 const posix = std.posix;
 
@@ -11,6 +13,7 @@ const PROTOCOL_VERSION = "2024-11-05";
 
 allocator: Allocator,
 buffer: *Buffer,
+builtin_nav: BuiltinNavigator,
 file_path: ?[]const u8,
 file_path_owned: ?[]u8,
 initialized: bool,
@@ -23,6 +26,7 @@ pub fn init(allocator: Allocator, buffer: *Buffer) Self {
     return .{
         .allocator = allocator,
         .buffer = buffer,
+        .builtin_nav = BuiltinNavigator.init(buffer),
         .file_path = null,
         .file_path_owned = null,
         .initialized = false,
@@ -210,6 +214,18 @@ fn dispatchTool(self: *Self, name: []const u8, args: ?std.json.Value) ![]const u
         return self.toolSearchContent(args);
     } else if (std.mem.eql(u8, name, "get_structure")) {
         return self.toolGetStructure();
+    } else if (std.mem.eql(u8, name, "read_section")) {
+        return self.toolReadSection(args);
+    } else if (std.mem.eql(u8, name, "list_tasks")) {
+        return self.toolListTasks(args);
+    } else if (std.mem.eql(u8, name, "update_task")) {
+        return self.toolUpdateTask(args);
+    } else if (std.mem.eql(u8, name, "get_breadcrumb")) {
+        return self.toolGetBreadcrumb(args);
+    } else if (std.mem.eql(u8, name, "move_section")) {
+        return self.toolMoveSection(args);
+    } else if (std.mem.eql(u8, name, "read_section_range")) {
+        return self.toolReadSectionRange(args);
     } else {
         return error.ToolNotFound;
     }
@@ -468,6 +484,121 @@ fn toolGetStructure(self: *Self) ![]const u8 {
     return result.toOwnedSlice(self.allocator);
 }
 
+// ── Navigation Tool Implementations ───────────────────────────────────
+
+fn toolReadSection(self: *Self, args: ?std.json.Value) ![]const u8 {
+    const heading_path = getStringArg(args, "heading_path") orelse return error.MissingArgument;
+    var nav = self.builtin_nav.navigator();
+    const section = nav.readSection(self.allocator, heading_path) catch |err| {
+        if (err == error.HeadingNotFound)
+            return std.fmt.allocPrint(self.allocator, "Heading path '{s}' not found", .{heading_path});
+        return err;
+    };
+    defer self.allocator.free(section.content);
+
+    var result: std.ArrayList(u8) = .{};
+    const w = result.writer(self.allocator);
+    try w.print("[L{}-L{}, h{}] {s}\n\n{s}", .{
+        section.heading_line + 1,
+        section.end_line,
+        section.level,
+        section.title,
+        section.content,
+    });
+    return result.toOwnedSlice(self.allocator);
+}
+
+fn toolListTasks(self: *Self, args: ?std.json.Value) ![]const u8 {
+    const section = getStringArg(args, "section");
+    const status_str = getStringArg(args, "status") orelse "all";
+    const status: u8 = if (std.ascii.eqlIgnoreCase(status_str, "pending"))
+        1
+    else if (std.ascii.eqlIgnoreCase(status_str, "done"))
+        2
+    else
+        0;
+
+    var nav = self.builtin_nav.navigator();
+    const tasks = nav.listTasks(self.allocator, section, status) catch |err| {
+        if (err == error.HeadingNotFound)
+            return std.fmt.allocPrint(self.allocator, "Section not found", .{});
+        return err;
+    };
+    defer {
+        for (tasks) |t| self.allocator.free(t.breadcrumb);
+        self.allocator.free(tasks);
+    }
+
+    if (tasks.len == 0) return try self.allocator.dupe(u8, "No tasks found");
+
+    var result: std.ArrayList(u8) = .{};
+    const w = result.writer(self.allocator);
+    for (tasks, 0..) |t, idx| {
+        if (idx > 0) try w.writeByte('\n');
+        const mark: u8 = if (t.done) 'x' else ' ';
+        try w.print("L{}: [{c}] {s} (under: {s})", .{ t.line + 1, mark, t.text, t.breadcrumb });
+    }
+    return result.toOwnedSlice(self.allocator);
+}
+
+fn toolUpdateTask(self: *Self, args: ?std.json.Value) ![]const u8 {
+    const line_num = getIntArg(args, "line") orelse return error.MissingArgument;
+    if (line_num < 1) return error.InvalidArgument;
+    const line: usize = @intCast(line_num - 1);
+
+    const done = getBoolArg(args, "done") orelse return error.MissingArgument;
+
+    var nav = self.builtin_nav.navigator();
+    const result = nav.updateTask(self.allocator, line, done) catch |err| {
+        if (err == error.InvalidArgument)
+            return std.fmt.allocPrint(self.allocator, "Line {} is not a task checkbox", .{line_num});
+        return err;
+    };
+    return result;
+}
+
+fn toolGetBreadcrumb(self: *Self, args: ?std.json.Value) ![]const u8 {
+    const line_num = getIntArg(args, "line") orelse return error.MissingArgument;
+    if (line_num < 1) return error.InvalidArgument;
+    const line: usize = @intCast(line_num - 1);
+
+    var nav = self.builtin_nav.navigator();
+    return nav.getBreadcrumb(self.allocator, line) catch |err| {
+        if (err == error.InvalidArgument)
+            return std.fmt.allocPrint(self.allocator, "Line {} out of range", .{line_num});
+        return err;
+    };
+}
+
+fn toolMoveSection(self: *Self, args: ?std.json.Value) ![]const u8 {
+    const heading = getStringArg(args, "heading") orelse return error.MissingArgument;
+    const after = getStringArg(args, "after");
+    const before = getStringArg(args, "before");
+
+    const target = after orelse before orelse return error.MissingArgument;
+    const is_before = (before != null);
+
+    var nav = self.builtin_nav.navigator();
+    return nav.moveSection(self.allocator, heading, target, is_before) catch |err| {
+        if (err == error.HeadingNotFound)
+            return std.fmt.allocPrint(self.allocator, "Heading not found", .{});
+        return err;
+    };
+}
+
+fn toolReadSectionRange(self: *Self, args: ?std.json.Value) ![]const u8 {
+    const heading_path = getStringArg(args, "heading_path") orelse return error.MissingArgument;
+    const start_off: ?usize = if (getIntArg(args, "start_offset")) |v| (if (v >= 0) @intCast(v) else null) else null;
+    const end_off: ?usize = if (getIntArg(args, "end_offset")) |v| (if (v >= 0) @intCast(v) else null) else null;
+
+    var nav = self.builtin_nav.navigator();
+    return nav.readSectionRange(self.allocator, heading_path, start_off, end_off) catch |err| {
+        if (err == error.HeadingNotFound)
+            return std.fmt.allocPrint(self.allocator, "Heading path '{s}' not found", .{heading_path});
+        return err;
+    };
+}
+
 // ── JSON-RPC Response Helpers ─────────────────────────────────────────
 
 fn sendRawResult(self: *Self, id: ?std.json.Value, raw_json: []const u8) !void {
@@ -509,6 +640,7 @@ fn sendToolError(self: *Self, id: ?std.json.Value, err: anyerror) !void {
         error.ToolNotFound => "Unknown tool",
         error.MissingArgument => "Missing required argument",
         error.InvalidArgument => "Invalid argument",
+        error.HeadingNotFound => "Heading not found",
         else => "Internal error",
     };
     try self.sendToolResult(id, msg, true);
@@ -591,6 +723,13 @@ fn getIntArg(args: ?std.json.Value, key: []const u8) ?i64 {
     const val = a.object.get(key) orelse return null;
     if (val != .integer) return null;
     return val.integer;
+}
+
+fn getBoolArg(args: ?std.json.Value, key: []const u8) ?bool {
+    const a = args orelse return null;
+    const val = a.object.get(key) orelse return null;
+    if (val != .bool) return null;
+    return val.bool;
 }
 
 fn containsIgnoreCase(haystack: []const u8, needle: []const u8) bool {

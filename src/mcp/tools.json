@@ -118,6 +118,114 @@
         "type": "object",
         "properties": {}
       }
+    },
+    {
+      "name": "read_section",
+      "description": "Read a section by heading path. Navigate nested headings using '/' separator (e.g. 'Plan/Step 1/Subtask A'). Returns the heading line and all body content until the next same-or-higher-level heading.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "heading_path": {
+            "type": "string",
+            "description": "Slash-separated heading path (e.g. 'Plan/Step 1/Subtask A'). Case-insensitive."
+          }
+        },
+        "required": ["heading_path"]
+      }
+    },
+    {
+      "name": "list_tasks",
+      "description": "List all task checkboxes (- [ ] / - [x]) in the document. Optionally scope to a section and filter by completion status. Returns lines with checkbox state, task text, and breadcrumb location.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "section": {
+            "type": "string",
+            "description": "Optional heading path to scope the search (e.g. 'Plan/Step 1'). Omit to search entire document."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["all", "pending", "done"],
+            "description": "Filter by task status. Defaults to 'all'."
+          }
+        }
+      }
+    },
+    {
+      "name": "update_task",
+      "description": "Toggle or set a task checkbox at a specific line. Changes '- [ ]' to '- [x]' or vice versa.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "line": {
+            "type": "integer",
+            "description": "Line number of the task checkbox (1-indexed)"
+          },
+          "done": {
+            "type": "boolean",
+            "description": "Set to true to mark done [x], false to mark pending [ ]"
+          }
+        },
+        "required": ["line", "done"]
+      }
+    },
+    {
+      "name": "get_breadcrumb",
+      "description": "Get the heading hierarchy (breadcrumb) for a specific line. Shows which section the line belongs to, formatted as 'Heading > Subheading > Sub-subheading'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "line": {
+            "type": "integer",
+            "description": "Line number to get breadcrumb for (1-indexed)"
+          }
+        },
+        "required": ["line"]
+      }
+    },
+    {
+      "name": "move_section",
+      "description": "Relocate a section (heading + all content until next same-or-higher-level heading) to a new position. Specify either 'after' or 'before' to control placement relative to the target heading.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "heading": {
+            "type": "string",
+            "description": "Heading text of the section to move (case-insensitive, without # prefix)"
+          },
+          "after": {
+            "type": "string",
+            "description": "Place the section after this heading's section. Mutually exclusive with 'before'."
+          },
+          "before": {
+            "type": "string",
+            "description": "Place the section before this heading. Mutually exclusive with 'after'."
+          }
+        },
+        "required": ["heading"]
+      }
+    },
+    {
+      "name": "read_section_range",
+      "description": "Read lines from a section with line numbers. Like read_section but with optional offset/limit for precise editing context. Line offsets are relative to the section start (0 = heading line).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "heading_path": {
+            "type": "string",
+            "description": "Slash-separated heading path (e.g. 'Plan/Step 1'). Case-insensitive."
+          },
+          "start_offset": {
+            "type": "integer",
+            "description": "Start offset within section (0 = heading line). Defaults to 0."
+          },
+          "end_offset": {
+            "type": "integer",
+            "description": "End offset within section (exclusive). Defaults to end of section."
+          }
+        },
+        "required": ["heading_path"]
+      }
     }
   ]
 }
