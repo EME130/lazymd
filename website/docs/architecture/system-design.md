@@ -17,6 +17,10 @@ main.zig  (Event Loop)
   │   └─ markdown/syntax.zig  Tokenizer + theme
   ├─ ui/Layout.zig   3-panel geometry
   ├─ ui/Preview.zig  Rendered markdown preview
+  ├─ highlight/
+  │   ├─ Highlighter.zig        Highlighter vtable interface
+  │   ├─ BuiltinHighlighter.zig Keyword-based tokenizer
+  │   └─ languages.zig          16 language definitions
   ├─ Renderer.zig    Double-buffered cell grid
   └─ plugin.zig      Plugin system
 ```
@@ -27,3 +31,4 @@ main.zig  (Event Loop)
 - **Double buffering** — Diff-based rendering prevents flicker
 - **Zero dependencies** — Uses only Zig stdlib + POSIX
 - **Vtable plugins** — Type-erased interface for extensibility
+- **Vtable highlighter** — Switchable backend for syntax highlighting (built-in keyword tokenizer or external LSP/tools)

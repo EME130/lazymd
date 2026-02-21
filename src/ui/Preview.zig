@@ -7,6 +7,7 @@ const Layout = @import("Layout.zig");
 const themes = @import("../themes.zig");
 const Input = @import("../Input.zig");
 const Highlighter = @import("../highlight/Highlighter.zig");
+const BuiltinHighlighter = @import("../highlight/BuiltinHighlighter.zig");
 const languages = @import("../highlight/languages.zig");
 const Self = @This();
 
@@ -30,12 +31,20 @@ folds_dirty: bool = true,
 last_line_count: usize = 0,
 hl_spans: std.ArrayList(Highlighter.Span) = .{},
 hl_state: Highlighter.State = .{},
-code_lang: ?*const languages.LangDef = null,
+code_lang: ?[]const u8 = null,
+builtin_hl: BuiltinHighlighter = .{},
+hl: ?Highlighter = null,
 
 pub fn init(allocator: std.mem.Allocator) Self {
     return .{
         .allocator = allocator,
     };
+}
+
+fn getHighlighter(self: *Self) Highlighter {
+    if (self.hl) |hl| return hl;
+    self.hl = self.builtin_hl.highlighter();
+    return self.hl.?;
 }
 
 pub fn deinit(self: *Self) void {
@@ -198,6 +207,7 @@ pub fn render(self: *Self, renderer: *Renderer, editor: *Editor, rect: Layout.Re
     self.code_lang = null;
 
     // Pre-scan for code blocks before visible area
+    const hl = self.getHighlighter();
     for (0..editor.scroll_row) |row| {
         if (row >= editor.buffer.lineCount()) break;
         const line = editor.buffer.getLine(row);
@@ -205,15 +215,15 @@ pub fn render(self: *Self, renderer: *Renderer, editor: *Editor, rect: Layout.Re
         if (fence_info.is_fence) {
             self.line_ctx.in_code_block = !self.line_ctx.in_code_block;
             if (self.line_ctx.in_code_block) {
-                self.code_lang = if (fence_info.language) |lang_name| languages.findLang(lang_name) else null;
+                self.code_lang = fence_info.language;
                 self.hl_state = .{};
             } else {
                 self.code_lang = null;
             }
         } else if (self.line_ctx.in_code_block) {
             // Run highlighter on invisible lines to maintain multi-line state
-            if (self.code_lang) |lang| {
-                Highlighter.highlightLine(line, lang, &self.hl_state, &self.hl_spans, self.allocator) catch {};
+            if (self.code_lang) |lang_name| {
+                hl.highlightLine(self.allocator, line, lang_name, &self.hl_state, &self.hl_spans) catch {};
             }
         }
     }
@@ -229,14 +239,14 @@ pub fn render(self: *Self, renderer: *Renderer, editor: *Editor, rect: Layout.Re
             if (fi.is_fence) {
                 self.line_ctx.in_code_block = !self.line_ctx.in_code_block;
                 if (self.line_ctx.in_code_block) {
-                    self.code_lang = if (fi.language) |ln| languages.findLang(ln) else null;
+                    self.code_lang = fi.language;
                     self.hl_state = .{};
                 } else {
                     self.code_lang = null;
                 }
             } else if (self.line_ctx.in_code_block) {
-                if (self.code_lang) |lang| {
-                    Highlighter.highlightLine(line, lang, &self.hl_state, &self.hl_spans, self.allocator) catch {};
+                if (self.code_lang) |lang_name| {
+                    hl.highlightLine(self.allocator, line, lang_name, &self.hl_state, &self.hl_spans) catch {};
                 }
             }
             buf_row += 1;
@@ -277,18 +287,18 @@ fn renderLine(self: *Self, renderer: *Renderer, line: []const u8, x: u16, y: u16
         self.line_ctx.in_code_block = !self.line_ctx.in_code_block;
         if (self.line_ctx.in_code_block) {
             // Resolve language from fence tag
-            self.code_lang = if (fence_info.language) |lang_name| languages.findLang(lang_name) else null;
+            self.code_lang = fence_info.language;
             self.hl_state = .{};
             // Opening fence: draw top border
             fillHLine(renderer, x, y, w, 0x2500, .bright_black, .{ .fixed = 235 }); // ─
             renderer.putChar(x, y, 0x250C, .bright_black, .{ .fixed = 235 }, .{}); // ┌
             if (x + w > 0) renderer.putChar(x + w -| 1, y, 0x2510, .bright_black, .{ .fixed = 235 }, .{}); // ┐
             // Show language label on top border
-            if (self.code_lang) |lang| {
+            if (self.code_lang) |lang_name| {
                 const label_x = x + 2;
                 const max_label_w = w -| 4;
                 if (max_label_w > 0) {
-                    _ = putStrClipped(renderer, label_x, y, lang.name, max_label_w, .bright_black, .{ .fixed = 235 }, .{ .dim = true });
+                    _ = putStrClipped(renderer, label_x, y, lang_name, max_label_w, .bright_black, .{ .fixed = 235 }, .{ .dim = true });
                 }
             }
             return 1;
@@ -310,9 +320,9 @@ fn renderLine(self: *Self, renderer: *Renderer, line: []const u8, x: u16, y: u16
         if (x + w > 0) renderer.putChar(x + w -| 1, y, 0x2502, .bright_black, .{ .fixed = 235 }, .{}); // │
         renderer.fillRect(x + 1, y, w -| 2, 1, ' ', .default, bg, .{});
 
-        if (self.code_lang) |lang| {
+        if (self.code_lang) |lang_name| {
             // Syntax-highlighted rendering
-            Highlighter.highlightLine(line, lang, &self.hl_state, &self.hl_spans, self.allocator) catch {
+            self.getHighlighter().highlightLine(self.allocator, line, lang_name, &self.hl_state, &self.hl_spans) catch {
                 // Fallback to monochrome on error
                 _ = putStrClipped(renderer, x + 1, y, line, w -| 2, tc.syn_normal, bg, .{});
                 return 1;

@@ -28,7 +28,8 @@ function Hero(): React.JSX.Element {
 
 const features = [
   {icon: '\u2328\uFE0F', title: 'Vim-Native', desc: 'Modal editing with Normal, Insert, and Command modes. All the vim motions you know: hjkl, w, b, dd, u, and more.'},
-  {icon: '\uD83D\uDC41\uFE0F', title: 'Live Preview', desc: 'See your markdown rendered in real-time in the side panel. Headers, bold, italic, code blocks, lists \u2014 all styled with ASCII art.'},
+  {icon: '\uD83D\uDC41\uFE0F', title: 'Live Preview', desc: 'See your markdown rendered in real-time in the side panel. Headers, bold, italic, code blocks with syntax highlighting for 16+ languages, lists \u2014 all styled with ASCII art.'},
+  {icon: '\uD83C\uDFA8', title: 'Syntax Highlighting', desc: 'Code blocks highlighted for 16 languages \u2014 Zig, Python, JS, Rust, Go, and more. Theme-aware colors with pluggable highlighter backend.'},
   {icon: '\uD83D\uDDB1\uFE0F', title: 'Mouse Support', desc: 'Click to position cursor, scroll with the mouse wheel, and click panels to switch focus. Works in modern terminal emulators.'},
   {icon: '\uD83E\uDDE9', title: 'Plugin System', desc: 'Extend lazy-md with plugins. Register commands, hook into events, add custom panels. Build and share with the community.'},
   {icon: '\u26A1', title: 'Zero Dependencies', desc: 'Pure Zig built on POSIX termios and ANSI escape codes. No external libraries. Fast startup, tiny binary.'},

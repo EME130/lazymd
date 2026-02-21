@@ -33,3 +33,24 @@ lazy-md ships with **12 built-in color themes**. Switch themes using command mod
 | `everforest` | Everforest comfortable green |
 
 Each theme defines colors for UI chrome, syntax highlighting, mode indicators, and preview rendering. Themes use RGB colors for truecolor terminals with fallback to 256-color.
+
+## Syntax Highlighting Colors
+
+All 12 themes include dedicated syntax highlighting colors for code blocks. These are the `syn_*` fields in each theme definition:
+
+| Field | Purpose |
+|-------|---------|
+| `syn_keyword` | Language keywords (`const`, `fn`, `def`, `if`, etc.) |
+| `syn_type` | Type names (`u32`, `String`, `int`, etc.) |
+| `syn_string` | String literals |
+| `syn_number` | Numeric literals |
+| `syn_comment` | Comments (line and block) |
+| `syn_builtin` | Built-in functions and macros |
+| `syn_operator` | Operators (`=`, `+`, `<`, etc.) |
+| `syn_punctuation` | Punctuation (`(`, `)`, `;`, etc.) |
+| `syn_annotation` | Annotations/attributes (`@import`, `#[derive]`, etc.) |
+| `syn_normal` | Default/unclassified tokens |
+
+### Supported Languages
+
+Syntax highlighting is available for 16 languages: Zig, Python, JavaScript, TypeScript, Rust, Go, C, C++, Bash, JSON, YAML, HTML, CSS, SQL, Lua, Ruby, and Java.
