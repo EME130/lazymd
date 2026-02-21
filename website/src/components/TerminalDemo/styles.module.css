@@ -1,0 +1,65 @@
+.terminalWindow {
+  max-width: 850px;
+  width: 100%;
+  background: #0d1117;
+  border-radius: 12px;
+  border: 1px solid #30363d;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.terminalHeader {
+  background: #21262d;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #30363d;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.red { background: #ff5f57; }
+.yellow { background: #febc2e; }
+.green { background: #28c840; }
+
+.title {
+  flex: 1;
+  text-align: center;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.85rem;
+  color: #8b949e;
+}
+
+.body {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  padding: 0;
+  margin: 0;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* Terminal color classes */
+.bar { background: #1f3a5f; color: #8db1e0; display: block; }
+.tree { color: #58a6ff; }
+.gutter { color: #484f58; }
+.h1 { color: #56d4dd; font-weight: bold; }
+.h2 { color: #3fb950; font-weight: bold; }
+.normal { color: #c9d1d9; }
+.list { color: #bc8cff; font-weight: bold; }
+.code { color: #d29922; background: #1c2128; }
+.border { color: #484f58; }
+.preview { color: #8b949e; }
+.bold { font-weight: bold; color: #f0f6fc; }
+.italic { font-style: italic; }
+.tGreen { color: #3fb950; }
+.line { color: #484f58; }
+.bullet { color: #bc8cff; font-weight: bold; }
+.codePreview { background: #1c2128; color: #d29922; padding: 0 4px; }
+.status { background: #21262d; color: #c9d1d9; display: block; }

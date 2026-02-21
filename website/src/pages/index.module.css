@@ -1,0 +1,211 @@
+/* ── Hero ─────────────────────────────────────────────────────────── */
+.hero {
+  padding: 100px 24px 60px;
+  text-align: center;
+}
+
+.heroTitle {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 4rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #58a6ff, #bc8cff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px;
+}
+
+.heroSubtitle {
+  font-size: 1.3rem;
+  color: #8b949e;
+  max-width: 500px;
+  margin: 0 auto 32px;
+  line-height: 1.5;
+}
+
+.heroActions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.btnPrimary {
+  display: inline-block;
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.2s;
+  background: #58a6ff;
+  color: #fff;
+  text-decoration: none;
+}
+.btnPrimary:hover {
+  background: #79c0ff;
+  text-decoration: none;
+  color: #fff;
+}
+
+.btnSecondary {
+  display: inline-block;
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.2s;
+  background: transparent;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  text-decoration: none;
+}
+.btnSecondary:hover {
+  border-color: #58a6ff;
+  color: #58a6ff;
+  text-decoration: none;
+}
+
+/* ── Terminal Demo ────────────────────────────────────────────────── */
+.terminalDemo {
+  padding: 0 24px 80px;
+  display: flex;
+  justify-content: center;
+}
+
+/* ── Features ─────────────────────────────────────────────────────── */
+.features {
+  padding: 80px 24px;
+  background: #161b22;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.sectionTitle {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.featureCard {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 28px;
+  transition: border-color 0.2s;
+}
+.featureCard:hover {
+  border-color: #58a6ff;
+}
+
+.featureIcon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+}
+
+.featureCard h3 {
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.featureCard p {
+  color: #8b949e;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* ── Install ──────────────────────────────────────────────────────── */
+.install {
+  padding: 80px 24px;
+}
+
+.installSteps {
+  max-width: 700px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.installStep h3 {
+  color: #58a6ff;
+}
+
+.codeBlock {
+  background: #1c2128;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+}
+
+.codeBlock code {
+  background: none;
+  padding: 0;
+  font-size: 0.9rem;
+  white-space: pre;
+  display: block;
+  line-height: 1.6;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  color: #c9d1d9;
+}
+
+/* ── Keybindings ──────────────────────────────────────────────────── */
+.keybindings {
+  padding: 80px 24px;
+  background: #161b22;
+}
+
+.keybindingTables {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 32px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.keybindingTables h3 {
+  color: #58a6ff;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #30363d;
+}
+
+.keybindingTables table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.keybindingTables td {
+  padding: 8px 0;
+  border-bottom: 1px solid #30363d;
+  font-size: 0.95rem;
+}
+
+.keybindingTables td:first-child {
+  white-space: nowrap;
+  padding-right: 16px;
+}
+
+.keybindingTables td:last-child {
+  color: #8b949e;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .heroTitle { font-size: 2.5rem; }
+  .heroSubtitle { font-size: 1.1rem; }
+  .heroActions { flex-direction: column; align-items: center; }
+  .featureGrid { grid-template-columns: 1fr; }
+  .keybindingTables { grid-template-columns: 1fr; }
+}

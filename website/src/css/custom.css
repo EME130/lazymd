@@ -1,0 +1,67 @@
+/* ── Docusaurus Theme Overrides ───────────────────────────────────── */
+
+:root {
+  --ifm-color-primary: #58a6ff;
+  --ifm-color-primary-dark: #3993ff;
+  --ifm-color-primary-darker: #2a8aff;
+  --ifm-color-primary-darkest: #006ee6;
+  --ifm-color-primary-light: #77b9ff;
+  --ifm-color-primary-lighter: #86c2ff;
+  --ifm-color-primary-lightest: #b4daff;
+  --ifm-font-family-monospace: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --ifm-code-font-size: 90%;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #58a6ff;
+  --ifm-color-primary-dark: #3993ff;
+  --ifm-color-primary-darker: #2a8aff;
+  --ifm-color-primary-darkest: #006ee6;
+  --ifm-color-primary-light: #77b9ff;
+  --ifm-color-primary-lighter: #86c2ff;
+  --ifm-color-primary-lightest: #b4daff;
+  --ifm-background-color: #0d1117;
+  --ifm-background-surface-color: #161b22;
+  --ifm-navbar-background-color: rgba(13, 17, 23, 0.85);
+  --ifm-footer-background-color: #0d1117;
+  --ifm-color-emphasis-300: #30363d;
+  --ifm-toc-border-color: #30363d;
+  --ifm-hr-border-color: #30363d;
+}
+
+[data-theme='dark'] .navbar {
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #30363d;
+}
+
+[data-theme='dark'] .footer--dark {
+  --ifm-footer-background-color: #0d1117;
+  border-top: 1px solid #30363d;
+}
+
+/* Navbar brand monospace */
+.navbar__title {
+  font-family: var(--ifm-font-family-monospace);
+  font-weight: 700;
+}
+
+/* Code block styling */
+[data-theme='dark'] .prism-code {
+  background-color: #1c2128 !important;
+  border: 1px solid #30363d;
+}
+
+/* Docs sidebar */
+[data-theme='dark'] .theme-doc-sidebar-container {
+  border-right: 1px solid #30363d !important;
+}
+
+/* kbd styling */
+kbd {
+  font-family: var(--ifm-font-family-monospace);
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.85em;
+}
