@@ -324,4 +324,6 @@ test {
     _ = @import("mcp/Server.zig");
     _ = @import("nav/Navigator.zig");
     _ = @import("nav/BuiltinNavigator.zig");
+    _ = @import("highlight/Highlighter.zig");
+    _ = @import("highlight/languages.zig");
 }

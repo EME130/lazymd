@@ -4,15 +4,33 @@ const Terminal = @import("../Terminal.zig");
 const Editor = @import("../Editor.zig");
 const syntax = @import("../markdown/syntax.zig");
 const Layout = @import("Layout.zig");
+const themes = @import("../themes.zig");
+const Input = @import("../Input.zig");
+const Highlighter = @import("../highlight/Highlighter.zig");
+const languages = @import("../highlight/languages.zig");
 const Self = @This();
 
 // ── Preview Renderer ──────────────────────────────────────────────────
 // Renders markdown content as a styled preview (not raw source).
 // Strips syntax markers and applies visual formatting.
+// Supports box-style headings and collapsible (foldable) sections.
+
+pub const FoldEntry = struct {
+    buf_row: usize,
+    level: u8,
+    collapsed: bool,
+};
 
 allocator: std.mem.Allocator,
 line_ctx: syntax.LineContext = .{},
 spans: std.ArrayList(syntax.Span) = .{},
+fold_entries: std.ArrayList(FoldEntry) = .{},
+preview_cursor: ?usize = null,
+folds_dirty: bool = true,
+last_line_count: usize = 0,
+hl_spans: std.ArrayList(Highlighter.Span) = .{},
+hl_state: Highlighter.State = .{},
+code_lang: ?*const languages.LangDef = null,
 
 pub fn init(allocator: std.mem.Allocator) Self {
     return .{
@@ -22,20 +40,181 @@ pub fn init(allocator: std.mem.Allocator) Self {
 
 pub fn deinit(self: *Self) void {
     self.spans.deinit(self.allocator);
+    self.fold_entries.deinit(self.allocator);
+    self.hl_spans.deinit(self.allocator);
 }
 
+// ── Fold Index ────────────────────────────────────────────────────────
+
+fn rebuildFoldIndex(self: *Self, editor: *Editor) void {
+    self.fold_entries.clearRetainingCapacity();
+    var in_code_block = false;
+    for (0..editor.buffer.lineCount()) |row| {
+        const line = editor.buffer.getLine(row);
+        const trimmed = std.mem.trimLeft(u8, line, " \t");
+        if (syntax.isCodeFence(trimmed)) {
+            in_code_block = !in_code_block;
+            continue;
+        }
+        if (in_code_block) continue;
+        if (parseHeader(trimmed)) |hdr| {
+            self.fold_entries.append(self.allocator, .{
+                .buf_row = row,
+                .level = hdr.level,
+                .collapsed = false,
+            }) catch {};
+        }
+    }
+    self.folds_dirty = false;
+    self.last_line_count = editor.buffer.lineCount();
+
+    // Clamp cursor
+    if (self.fold_entries.items.len == 0) {
+        self.preview_cursor = null;
+    } else if (self.preview_cursor) |c| {
+        if (c >= self.fold_entries.items.len) {
+            self.preview_cursor = self.fold_entries.items.len - 1;
+        }
+    }
+}
+
+fn isLineFolded(self: *Self, buf_row: usize) bool {
+    // Check if buf_row falls inside any collapsed section
+    for (self.fold_entries.items) |entry| {
+        if (!entry.collapsed) continue;
+        if (buf_row <= entry.buf_row) continue;
+        // buf_row is after this collapsed heading — check if it's before the next
+        // heading of same or higher level (lower or equal level number)
+        const section_end = self.findSectionEnd(entry.buf_row, entry.level);
+        if (buf_row < section_end) return true;
+    }
+    return false;
+}
+
+fn findSectionEnd(self: *Self, heading_row: usize, level: u8) usize {
+    // Find the next heading at same or higher level after heading_row
+    for (self.fold_entries.items) |entry| {
+        if (entry.buf_row <= heading_row) continue;
+        if (entry.level <= level) return entry.buf_row;
+    }
+    return std.math.maxInt(usize); // extends to end of document
+}
+
+fn foldIndexForRow(self: *Self, buf_row: usize) ?usize {
+    for (self.fold_entries.items, 0..) |entry, i| {
+        if (entry.buf_row == buf_row) return i;
+    }
+    return null;
+}
+
+// ── Keyboard / Mouse Handling ─────────────────────────────────────────
+
+pub fn handlePreviewKey(self: *Self, key: Input.Key) void {
+    if (self.fold_entries.items.len == 0) return;
+
+    switch (key.code) {
+        .char => |c| switch (c) {
+            'j' => self.moveCursor(1),
+            'k' => self.moveCursor(-1),
+            ' ' => self.toggleAtCursor(),
+            'l' => self.expandAtCursor(),
+            'h' => self.collapseAtCursor(),
+            else => {},
+        },
+        .down => self.moveCursor(1),
+        .up => self.moveCursor(-1),
+        .enter => self.toggleAtCursor(),
+        else => {},
+    }
+}
+
+pub fn handleClick(self: *Self, mouse_x: u16, mouse_y: u16, rect: Layout.Rect) void {
+    _ = mouse_x;
+    // Map mouse_y to a fold entry by checking which heading is rendered at that y
+    // Simple approach: find the heading whose screen position matches
+    const content_y_start = rect.y + 1;
+    if (mouse_y < content_y_start) return;
+
+    // Find which fold entry is closest to the clicked row
+    for (self.fold_entries.items, 0..) |entry, i| {
+        // We stored buf_row; approximate: check if the heading is visible
+        _ = entry;
+        self.preview_cursor = i;
+        self.toggleAtCursor();
+        return;
+    }
+}
+
+fn moveCursor(self: *Self, delta: i32) void {
+    if (self.fold_entries.items.len == 0) return;
+    const cur = self.preview_cursor orelse 0;
+    const new = if (delta > 0)
+        @min(cur + @as(usize, @intCast(delta)), self.fold_entries.items.len - 1)
+    else
+        cur -| @as(usize, @intCast(-delta));
+    self.preview_cursor = new;
+}
+
+fn toggleAtCursor(self: *Self) void {
+    if (self.preview_cursor) |idx| {
+        if (idx < self.fold_entries.items.len) {
+            self.fold_entries.items[idx].collapsed = !self.fold_entries.items[idx].collapsed;
+        }
+    }
+}
+
+fn expandAtCursor(self: *Self) void {
+    if (self.preview_cursor) |idx| {
+        if (idx < self.fold_entries.items.len) {
+            self.fold_entries.items[idx].collapsed = false;
+        }
+    }
+}
+
+fn collapseAtCursor(self: *Self) void {
+    if (self.preview_cursor) |idx| {
+        if (idx < self.fold_entries.items.len) {
+            self.fold_entries.items[idx].collapsed = true;
+        }
+    }
+}
+
+// ── Render ────────────────────────────────────────────────────────────
+
 pub fn render(self: *Self, renderer: *Renderer, editor: *Editor, rect: Layout.Rect) void {
+    // Invalidation check
+    if (editor.buffer.lineCount() != self.last_line_count) {
+        self.folds_dirty = true;
+    }
+    if (self.folds_dirty) {
+        self.rebuildFoldIndex(editor);
+    }
+
     const content_x = rect.x + 2;
     const content_w: u16 = if (rect.w > 3) rect.w - 3 else 1;
 
     self.line_ctx = .{};
+    self.hl_state = .{};
+    self.code_lang = null;
 
     // Pre-scan for code blocks before visible area
     for (0..editor.scroll_row) |row| {
         if (row >= editor.buffer.lineCount()) break;
         const line = editor.buffer.getLine(row);
-        if (syntax.isCodeFence(line)) {
+        const fence_info = syntax.parseCodeFence(line);
+        if (fence_info.is_fence) {
             self.line_ctx.in_code_block = !self.line_ctx.in_code_block;
+            if (self.line_ctx.in_code_block) {
+                self.code_lang = if (fence_info.language) |lang_name| languages.findLang(lang_name) else null;
+                self.hl_state = .{};
+            } else {
+                self.code_lang = null;
+            }
+        } else if (self.line_ctx.in_code_block) {
+            // Run highlighter on invisible lines to maintain multi-line state
+            if (self.code_lang) |lang| {
+                Highlighter.highlightLine(line, lang, &self.hl_state, &self.hl_spans, self.allocator) catch {};
+            }
         }
     }
 
@@ -43,8 +222,43 @@ pub fn render(self: *Self, renderer: *Renderer, editor: *Editor, rect: Layout.Re
     var buf_row: usize = editor.scroll_row;
 
     while (screen_row < rect.h -| 1 and buf_row < editor.buffer.lineCount()) {
+        // Skip folded lines (but still track code fence + highlight state)
+        if (self.isLineFolded(buf_row)) {
+            const line = editor.buffer.getLine(buf_row);
+            const fi = syntax.parseCodeFence(line);
+            if (fi.is_fence) {
+                self.line_ctx.in_code_block = !self.line_ctx.in_code_block;
+                if (self.line_ctx.in_code_block) {
+                    self.code_lang = if (fi.language) |ln| languages.findLang(ln) else null;
+                    self.hl_state = .{};
+                } else {
+                    self.code_lang = null;
+                }
+            } else if (self.line_ctx.in_code_block) {
+                if (self.code_lang) |lang| {
+                    Highlighter.highlightLine(line, lang, &self.hl_state, &self.hl_spans, self.allocator) catch {};
+                }
+            }
+            buf_row += 1;
+            continue;
+        }
+
         const y = rect.y + 1 + screen_row;
         const line = editor.buffer.getLine(buf_row);
+
+        // Render fold indicator in the 2-char left margin
+        if (self.foldIndexForRow(buf_row)) |fi| {
+            const entry = self.fold_entries.items[fi];
+            const indicator: u21 = if (entry.collapsed) 0x25B6 else 0x25BC; // ▶ or ▼
+            const is_selected = if (self.preview_cursor) |c| c == fi else false;
+            const ind_fg: Terminal.Color = if (is_selected) .bright_white else .bright_black;
+            const ind_bg: Terminal.Color = if (is_selected) .{ .fixed = 238 } else .default;
+            renderer.putChar(rect.x + 1, y, indicator, ind_fg, ind_bg, .{});
+            if (is_selected) {
+                // Highlight the full line for selected heading
+                renderer.fillRect(content_x, y, content_w, 1, ' ', .default, .{ .fixed = 236 }, .{});
+            }
+        }
 
         const rows_used = self.renderLine(renderer, line, content_x, y, content_w, rect.h -| 1 -| screen_row);
         screen_row += rows_used;
@@ -58,15 +272,28 @@ fn renderLine(self: *Self, renderer: *Renderer, line: []const u8, x: u16, y: u16
     const trimmed = std.mem.trimLeft(u8, line, " \t");
 
     // Code fence
-    if (syntax.isCodeFence(line)) {
+    const fence_info = syntax.parseCodeFence(line);
+    if (fence_info.is_fence) {
         self.line_ctx.in_code_block = !self.line_ctx.in_code_block;
         if (self.line_ctx.in_code_block) {
+            // Resolve language from fence tag
+            self.code_lang = if (fence_info.language) |lang_name| languages.findLang(lang_name) else null;
+            self.hl_state = .{};
             // Opening fence: draw top border
             fillHLine(renderer, x, y, w, 0x2500, .bright_black, .{ .fixed = 235 }); // ─
             renderer.putChar(x, y, 0x250C, .bright_black, .{ .fixed = 235 }, .{}); // ┌
             if (x + w > 0) renderer.putChar(x + w -| 1, y, 0x2510, .bright_black, .{ .fixed = 235 }, .{}); // ┐
+            // Show language label on top border
+            if (self.code_lang) |lang| {
+                const label_x = x + 2;
+                const max_label_w = w -| 4;
+                if (max_label_w > 0) {
+                    _ = putStrClipped(renderer, label_x, y, lang.name, max_label_w, .bright_black, .{ .fixed = 235 }, .{ .dim = true });
+                }
+            }
             return 1;
         } else {
+            self.code_lang = null;
             // Closing fence: draw bottom border
             fillHLine(renderer, x, y, w, 0x2500, .bright_black, .{ .fixed = 235 }); // ─
             renderer.putChar(x, y, 0x2514, .bright_black, .{ .fixed = 235 }, .{}); // └
@@ -77,10 +304,31 @@ fn renderLine(self: *Self, renderer: *Renderer, line: []const u8, x: u16, y: u16
 
     // Inside code block
     if (self.line_ctx.in_code_block) {
+        const tc = themes.currentColors();
+        const bg = tc.code_block_bg;
         renderer.putChar(x, y, 0x2502, .bright_black, .{ .fixed = 235 }, .{}); // │
         if (x + w > 0) renderer.putChar(x + w -| 1, y, 0x2502, .bright_black, .{ .fixed = 235 }, .{}); // │
-        renderer.fillRect(x + 1, y, w -| 2, 1, ' ', .default, .{ .fixed = 235 }, .{});
-        _ = putStrClipped(renderer, x + 1, y, line, w -| 2, .yellow, .{ .fixed = 235 }, .{});
+        renderer.fillRect(x + 1, y, w -| 2, 1, ' ', .default, bg, .{});
+
+        if (self.code_lang) |lang| {
+            // Syntax-highlighted rendering
+            Highlighter.highlightLine(line, lang, &self.hl_state, &self.hl_spans, self.allocator) catch {
+                // Fallback to monochrome on error
+                _ = putStrClipped(renderer, x + 1, y, line, w -| 2, tc.syn_normal, bg, .{});
+                return 1;
+            };
+            var col: u16 = 0;
+            for (self.hl_spans.items) |span| {
+                if (col >= w -| 2) break;
+                const text = line[span.start..span.end];
+                const fg = tc.syntaxColor(span.kind);
+                const style: Terminal.Style = if (span.kind == .comment) .{ .italic = true } else .{};
+                col += putStrClipped(renderer, x + 1 + col, y, text, w -| 2 -| col, fg, bg, style);
+            }
+        } else {
+            // No language — monochrome fallback
+            _ = putStrClipped(renderer, x + 1, y, line, w -| 2, .yellow, bg, .{});
+        }
         return 1;
     }
 
@@ -93,30 +341,9 @@ fn renderLine(self: *Self, renderer: *Renderer, line: []const u8, x: u16, y: u16
         return 1;
     }
 
-    // Header
+    // Header — box-style rendering
     if (parseHeader(trimmed)) |result| {
-        const header_text = result.text;
-        const level = result.level;
-        const fg: Terminal.Color = switch (level) {
-            1 => .bright_cyan,
-            2 => .bright_green,
-            3 => .bright_yellow,
-            else => .bright_blue,
-        };
-        const style: Terminal.Style = .{ .bold = true };
-
-        // Render header text with inline formatting
-        const written = self.renderInline(renderer, header_text, x, y, w, fg, style);
-        _ = written;
-
-        // Underline for h1 and h2
-        if (level <= 2 and max_rows > 1) {
-            const underline_char: u21 = if (level == 1) 0x2550 else 0x2500; // ═ or ─
-            const underline_color: Terminal.Color = if (level == 1) .bright_cyan else .bright_green;
-            fillHLine(renderer, x, y + 1, w, underline_char, underline_color, .default);
-            return 2;
-        }
-        return 1;
+        return self.renderHeading(renderer, result.text, result.level, x, y, w, max_rows);
     }
 
     // Blockquote
@@ -164,6 +391,113 @@ fn renderLine(self: *Self, renderer: *Renderer, line: []const u8, x: u16, y: u16
 
     // Normal paragraph
     _ = self.renderInline(renderer, line, x, y, w, .default, .{});
+    return 1;
+}
+
+// ── Box-Style Heading Rendering ───────────────────────────────────────
+
+fn renderHeading(self: *Self, renderer: *Renderer, text: []const u8, level: u8, x: u16, y: u16, w: u16, max_rows: u16) u16 {
+    const tc = themes.currentColors();
+    const fg: Terminal.Color = switch (level) {
+        1 => tc.h1,
+        2 => tc.h2,
+        3 => tc.h3,
+        4 => tc.h4,
+        5 => tc.h5,
+        6 => tc.h6,
+        else => tc.h4,
+    };
+
+    // Fallback: too narrow for any box drawing
+    if (w < 6) {
+        _ = self.renderInline(renderer, text, x, y, w, fg, .{ .bold = true });
+        return 1;
+    }
+
+    switch (level) {
+        // H1: Double-line box ╔═══════════════╗
+        //                     ║ Heading Text  ║
+        //                     ╚═══════════════╝
+        1 => {
+            if (max_rows < 3) {
+                // Fallback to H3 inline-rule style
+                return renderInlineRule(self, renderer, text, x, y, w, fg);
+            }
+            const bg: Terminal.Color = .{ .fixed = 236 };
+            // Top border
+            renderer.putChar(x, y, 0x2554, fg, .default, .{}); // ╔
+            fillHLine(renderer, x + 1, y, w -| 2, 0x2550, fg, .default); // ═
+            renderer.putChar(x + w -| 1, y, 0x2557, fg, .default, .{}); // ╗
+            // Middle row with text
+            renderer.putChar(x, y + 1, 0x2551, fg, .default, .{}); // ║
+            renderer.fillRect(x + 1, y + 1, w -| 2, 1, ' ', fg, bg, .{});
+            renderer.putChar(x + w -| 1, y + 1, 0x2551, fg, .default, .{}); // ║
+            _ = self.renderInline(renderer, text, x + 2, y + 1, w -| 4, fg, .{ .bold = true });
+            // Bottom border
+            renderer.putChar(x, y + 2, 0x255A, fg, .default, .{}); // ╚
+            fillHLine(renderer, x + 1, y + 2, w -| 2, 0x2550, fg, .default); // ═
+            renderer.putChar(x + w -| 1, y + 2, 0x255D, fg, .default, .{}); // ╝
+            return 3;
+        },
+        // H2: Single-line box ┌───────────────┐
+        //                     │ Heading Text  │
+        //                     └───────────────┘
+        2 => {
+            if (max_rows < 3) {
+                return renderInlineRule(self, renderer, text, x, y, w, fg);
+            }
+            const bg: Terminal.Color = .{ .fixed = 235 };
+            // Top border
+            renderer.putChar(x, y, 0x250C, fg, .default, .{}); // ┌
+            fillHLine(renderer, x + 1, y, w -| 2, 0x2500, fg, .default); // ─
+            renderer.putChar(x + w -| 1, y, 0x2510, fg, .default, .{}); // ┐
+            // Middle row with text
+            renderer.putChar(x, y + 1, 0x2502, fg, .default, .{}); // │
+            renderer.fillRect(x + 1, y + 1, w -| 2, 1, ' ', fg, bg, .{});
+            renderer.putChar(x + w -| 1, y + 1, 0x2502, fg, .default, .{}); // │
+            _ = self.renderInline(renderer, text, x + 2, y + 1, w -| 4, fg, .{ .bold = true });
+            // Bottom border
+            renderer.putChar(x, y + 2, 0x2514, fg, .default, .{}); // └
+            fillHLine(renderer, x + 1, y + 2, w -| 2, 0x2500, fg, .default); // ─
+            renderer.putChar(x + w -| 1, y + 2, 0x2518, fg, .default, .{}); // ┘
+            return 3;
+        },
+        // H3: Inline ruled line ── Text ────
+        3 => return renderInlineRule(self, renderer, text, x, y, w, fg),
+        // H4: Filled triangle ▸ Text
+        4 => {
+            renderer.putChar(x, y, 0x25B8, fg, .default, .{ .bold = true }); // ▸
+            _ = self.renderInline(renderer, text, x + 2, y, w -| 2, fg, .{ .bold = true });
+            return 1;
+        },
+        // H5: Open triangle ▹ Text
+        5 => {
+            renderer.putChar(x, y, 0x25B9, fg, .default, .{}); // ▹
+            _ = self.renderInline(renderer, text, x + 2, y, w -| 2, fg, .{ .bold = true });
+            return 1;
+        },
+        // H6: Middle dot · Text
+        else => {
+            renderer.putChar(x, y, 0x00B7, fg, .default, .{}); // ·
+            _ = self.renderInline(renderer, text, x + 2, y, w -| 2, fg, .{});
+            return 1;
+        },
+    }
+}
+
+fn renderInlineRule(self: *Self, renderer: *Renderer, text: []const u8, x: u16, y: u16, w: u16, fg: Terminal.Color) u16 {
+    // ── Text ────
+    const prefix_len: u16 = 3; // "── " (2 dashes + space)
+    fillHLine(renderer, x, y, @min(2, w), 0x2500, fg, .default); // ──
+    const text_x = x + prefix_len;
+    const text_w = w -| prefix_len -| 1;
+    const written = self.renderInline(renderer, text, text_x, y, text_w, fg, .{ .bold = true });
+    // Fill remaining with rule
+    const trail_start = text_x + written + 1;
+    const trail_end = x + w;
+    if (trail_start < trail_end) {
+        fillHLine(renderer, trail_start, y, trail_end - trail_start, 0x2500, fg, .default);
+    }
     return 1;
 }
 

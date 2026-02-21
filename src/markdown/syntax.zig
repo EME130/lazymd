@@ -105,6 +105,40 @@ pub fn isCodeFence(line: []const u8) bool {
     return false;
 }
 
+pub const CodeFenceInfo = struct {
+    is_fence: bool,
+    language: ?[]const u8,
+};
+
+pub fn parseCodeFence(line: []const u8) CodeFenceInfo {
+    const trimmed = std.mem.trimLeft(u8, line, " ");
+    if (trimmed.len < 3) return .{ .is_fence = false, .language = null };
+
+    const fence_char: u8 = if (trimmed[0] == '`' and trimmed[1] == '`' and trimmed[2] == '`')
+        '`'
+    else if (trimmed[0] == '~' and trimmed[1] == '~' and trimmed[2] == '~')
+        '~'
+    else
+        return .{ .is_fence = false, .language = null };
+
+    // Skip past the fence chars
+    var i: usize = 3;
+    while (i < trimmed.len and trimmed[i] == fence_char) : (i += 1) {}
+
+    // Skip whitespace after fence
+    while (i < trimmed.len and trimmed[i] == ' ') : (i += 1) {}
+
+    if (i >= trimmed.len) return .{ .is_fence = true, .language = null };
+
+    // Extract language tag (until whitespace or end)
+    const lang_start = i;
+    while (i < trimmed.len and trimmed[i] != ' ' and trimmed[i] != '\t') : (i += 1) {}
+
+    const lang = trimmed[lang_start..i];
+    if (lang.len == 0) return .{ .is_fence = true, .language = null };
+    return .{ .is_fence = true, .language = lang };
+}
+
 pub fn tokenizeLine(allocator: std.mem.Allocator, line: []const u8, ctx: *LineContext, spans: *std.ArrayList(Span)) !void {
     spans.clearRetainingCapacity();
 
@@ -383,6 +417,27 @@ test "code fence" {
     try std.testing.expect(isCodeFence("```zig"));
     try std.testing.expect(isCodeFence("~~~"));
     try std.testing.expect(!isCodeFence("``"));
+}
+
+test "parseCodeFence" {
+    const r1 = parseCodeFence("```zig");
+    try std.testing.expect(r1.is_fence);
+    try std.testing.expectEqualStrings("zig", r1.language.?);
+
+    const r2 = parseCodeFence("```python");
+    try std.testing.expect(r2.is_fence);
+    try std.testing.expectEqualStrings("python", r2.language.?);
+
+    const r3 = parseCodeFence("```");
+    try std.testing.expect(r3.is_fence);
+    try std.testing.expect(r3.language == null);
+
+    const r4 = parseCodeFence("~~~js");
+    try std.testing.expect(r4.is_fence);
+    try std.testing.expectEqualStrings("js", r4.language.?);
+
+    const r5 = parseCodeFence("not a fence");
+    try std.testing.expect(!r5.is_fence);
 }
 
 test "tokenize header line" {
