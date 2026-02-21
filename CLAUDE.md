@@ -26,6 +26,10 @@ src/
   nav/
     Navigator.zig        # Navigation vtable interface (switchable backend)
     BuiltinNavigator.zig # Built-in implementation using Buffer
+  highlight/
+    Highlighter.zig        # Highlighter vtable interface (switchable backend)
+    BuiltinHighlighter.zig # Keyword-based tokenizer (default backend)
+    languages.zig          # 16 language definitions
 build.zig            # Build configuration
 build.zig.zon        # Package manifest
 ```
