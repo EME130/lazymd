@@ -3,12 +3,14 @@ const Renderer = @import("../Renderer.zig");
 const Terminal = @import("../Terminal.zig");
 const Editor = @import("../Editor.zig");
 const Preview = @import("Preview.zig");
+const BrainView = @import("BrainView.zig");
 const Self = @This();
 
 pub const Panel = enum {
     file_tree,
     editor,
     preview,
+    brain,
 };
 
 pub const Rect = struct {
@@ -22,12 +24,14 @@ pub const Rect = struct {
 
 show_file_tree: bool = true,
 show_preview: bool = true,
+show_brain: bool = false,
 active_panel: Panel = .editor,
 // Computed rects
 title_rect: Rect = .{ .x = 0, .y = 0, .w = 0, .h = 0 },
 tree_rect: Rect = .{ .x = 0, .y = 0, .w = 0, .h = 0 },
 editor_rect: Rect = .{ .x = 0, .y = 0, .w = 0, .h = 0 },
 preview_rect: Rect = .{ .x = 0, .y = 0, .w = 0, .h = 0 },
+brain_rect: Rect = .{ .x = 0, .y = 0, .w = 0, .h = 0 },
 status_rect: Rect = .{ .x = 0, .y = 0, .w = 0, .h = 0 },
 cmd_rect: Rect = .{ .x = 0, .y = 0, .w = 0, .h = 0 },
 width: u16 = 0,
@@ -48,10 +52,11 @@ pub fn compute(self: *Self, w: u16, h: u16) void {
     self.status_rect = .{ .x = 0, .y = h -| 2, .w = w, .h = 1 };
     self.cmd_rect = .{ .x = 0, .y = h -| 1, .w = w, .h = 1 };
 
-    // Panel widths
+    // Panel widths — brain replaces preview (mutually exclusive)
     const tree_w: u16 = if (self.show_file_tree) @min(w / 5, 30) else 0;
-    const preview_w: u16 = if (self.show_preview) @min(w / 4, 40) else 0;
-    const editor_w = w -| tree_w -| preview_w;
+    const right_panel = self.show_brain or self.show_preview;
+    const right_w: u16 = if (right_panel) @min(w / 4, 40) else 0;
+    const editor_w = w -| tree_w -| right_w;
 
     if (self.show_file_tree) {
         self.tree_rect = .{ .x = 0, .y = content_y, .w = tree_w, .h = content_h };
@@ -59,15 +64,24 @@ pub fn compute(self: *Self, w: u16, h: u16) void {
 
     self.editor_rect = .{ .x = tree_w, .y = content_y, .w = editor_w, .h = content_h };
 
-    if (self.show_preview) {
-        self.preview_rect = .{ .x = tree_w + editor_w, .y = content_y, .w = preview_w, .h = content_h };
+    if (self.show_brain) {
+        self.brain_rect = .{ .x = tree_w + editor_w, .y = content_y, .w = right_w, .h = content_h };
+    } else if (self.show_preview) {
+        self.preview_rect = .{ .x = tree_w + editor_w, .y = content_y, .w = right_w, .h = content_h };
     }
 }
 
 pub fn togglePanel(self: *Self, panel: Panel) void {
     switch (panel) {
         .file_tree => self.show_file_tree = !self.show_file_tree,
-        .preview => self.show_preview = !self.show_preview,
+        .preview => {
+            self.show_preview = !self.show_preview;
+            if (self.show_preview) self.show_brain = false; // mutually exclusive
+        },
+        .brain => {
+            self.show_brain = !self.show_brain;
+            if (self.show_brain) self.show_preview = false; // mutually exclusive
+        },
         .editor => {},
     }
 }
@@ -75,8 +89,9 @@ pub fn togglePanel(self: *Self, panel: Panel) void {
 pub fn cyclePanel(self: *Self) void {
     self.active_panel = switch (self.active_panel) {
         .file_tree => .editor,
-        .editor => if (self.show_preview) .preview else .file_tree,
+        .editor => if (self.show_brain) .brain else if (self.show_preview) .preview else if (self.show_file_tree) .file_tree else .editor,
         .preview => if (self.show_file_tree) .file_tree else .editor,
+        .brain => if (self.show_file_tree) .file_tree else .editor,
     };
 }
 
@@ -90,7 +105,7 @@ pub fn renderChrome(self: *Self, renderer: *Renderer) void {
     renderer.putStr(0, 0, title, tc.title_fg, tc.title_bg, .{ .bold = true });
 
     // Keyboard hints on title bar (right-aligned)
-    const hints = "Tab:panels  1:tree  2:preview  :q quit ";
+    const hints = "Tab:panels  1:tree  2:preview  3:brain  :q quit ";
     if (hints.len < self.width) {
         renderer.putStr(self.width -| @as(u16, @intCast(hints.len)), 0, hints, tc.border_active, tc.title_bg, .{});
     }
@@ -99,7 +114,9 @@ pub fn renderChrome(self: *Self, renderer: *Renderer) void {
     if (self.show_file_tree and self.tree_rect.w > 0) {
         renderer.drawVLine(self.tree_rect.x + self.tree_rect.w -| 1, self.tree_rect.y, self.tree_rect.h, tc.border, .default);
     }
-    if (self.show_preview and self.preview_rect.w > 0) {
+    if (self.show_brain and self.brain_rect.w > 0) {
+        renderer.drawVLine(self.brain_rect.x, self.brain_rect.y, self.brain_rect.h, tc.border, .default);
+    } else if (self.show_preview and self.preview_rect.w > 0) {
         renderer.drawVLine(self.preview_rect.x, self.preview_rect.y, self.preview_rect.h, tc.border, .default);
     }
 }
@@ -142,6 +159,28 @@ pub fn renderPreview(self: *Self, renderer: *Renderer, editor: *Editor, preview:
 
     // Rendered markdown preview
     preview.render(renderer, editor, r);
+}
+
+pub fn renderBrain(self: *Self, renderer: *Renderer, brain: *BrainView) void {
+    if (!self.show_brain) return;
+
+    const r = self.brain_rect;
+    const tc = @import("../themes.zig").currentColors();
+    const is_active = self.active_panel == .brain;
+    const border_fg: Terminal.Color = if (is_active) tc.border_active else tc.border;
+
+    // Panel border and header
+    renderer.drawVLine(r.x, r.y, r.h, border_fg, .default);
+    renderer.putStr(r.x + 1, r.y, " Brain ", tc.title_fg, .default, .{ .bold = true });
+
+    // Render graph inside panel (offset by 1 for border, 1 for header)
+    const inner: Rect = .{
+        .x = r.x + 1,
+        .y = r.y + 1,
+        .w = if (r.w > 2) r.w - 2 else 1,
+        .h = if (r.h > 2) r.h - 2 else 1,
+    };
+    brain.render(renderer, inner);
 }
 
 pub const FileEntry = struct {

@@ -6,6 +6,9 @@ const Editor = @import("Editor.zig");
 const Renderer = @import("Renderer.zig");
 const Layout = @import("ui/Layout.zig");
 const Preview = @import("ui/Preview.zig");
+const BrainView = @import("ui/BrainView.zig");
+const Scanner = @import("brain/Scanner.zig");
+const Graph = @import("brain/Graph.zig");
 const plugin = @import("plugin.zig");
 const McpServer = @import("mcp/Server.zig");
 
@@ -59,6 +62,10 @@ pub fn main() !void {
     var layout = Layout{};
     var preview = Preview.init(allocator);
     defer preview.deinit();
+    var brain_view = BrainView.init(allocator);
+    defer brain_view.deinit();
+    var brain_graph: ?Graph = null;
+    defer if (brain_graph != null) brain_graph.?.deinit();
     var plugin_mgr = plugin.PluginManager.init(allocator);
     defer plugin_mgr.deinit();
 
@@ -82,6 +89,20 @@ pub fn main() !void {
         file_entries.deinit(allocator);
     }
     try scanDirectory(allocator, ".", &file_entries);
+
+    // Scan vault for brain graph
+    brain_graph = Scanner.scan(allocator, ".") catch null;
+    if (brain_graph != null) {
+        brain_view.setGraph(&brain_graph.?);
+        if (file_path) |path| {
+            const stem = blk: {
+                const basename = std.fs.path.basename(path);
+                if (std.mem.lastIndexOfScalar(u8, basename, '.')) |dot| break :blk basename[0..dot];
+                break :blk basename;
+            };
+            brain_view.setCurrentFile(stem);
+        }
+    }
 
     // Main loop
     while (!editor.should_quit) {
@@ -107,7 +128,11 @@ pub fn main() !void {
         try editor.render(&renderer);
         editor.renderStatusBar(&renderer, layout.status_rect.y);
         editor.renderCommandBar(&renderer, layout.cmd_rect.y);
-        layout.renderPreview(&renderer, &editor, &preview);
+        if (layout.show_brain) {
+            layout.renderBrain(&renderer, &brain_view);
+        } else {
+            layout.renderPreview(&renderer, &editor, &preview);
+        }
 
         try renderer.flush();
 
@@ -134,8 +159,19 @@ pub fn main() !void {
                             renderer.forceRedraw();
                             continue;
                         },
+                        '3' => if (key.alt) {
+                            layout.togglePanel(.brain);
+                            layout.compute(term.width, term.height);
+                            renderer.forceRedraw();
+                            continue;
+                        },
                         else => {},
                     }
+                }
+                // Route keys to brain panel when active
+                if (layout.active_panel == .brain and editor.mode == .normal) {
+                    _ = brain_view.handleKey(key);
+                    continue;
                 }
                 // Route keys to preview panel when active
                 if (layout.active_panel == .preview and editor.mode == .normal) {
@@ -189,6 +225,12 @@ fn handleMouse(editor: *Editor, layout: *Layout, mouse: Input.Mouse, preview_pan
                 mouse.y >= layout.tree_rect.y and mouse.y < layout.tree_rect.y + layout.tree_rect.h)
             {
                 layout.active_panel = .file_tree;
+            }
+            // Click in brain panel
+            else if (layout.show_brain and mouse.x >= layout.brain_rect.x and mouse.x < layout.brain_rect.x + layout.brain_rect.w and
+                mouse.y >= layout.brain_rect.y and mouse.y < layout.brain_rect.y + layout.brain_rect.h)
+            {
+                layout.active_panel = .brain;
             }
             // Click in preview
             else if (layout.show_preview and mouse.x >= layout.preview_rect.x and mouse.x < layout.preview_rect.x + layout.preview_rect.w and
@@ -322,6 +364,9 @@ test {
     _ = @import("plugins/vault_stats.zig");
     _ = @import("plugins/nested_tags.zig");
     _ = @import("mcp/Server.zig");
+    _ = @import("brain/Graph.zig");
+    _ = @import("brain/Scanner.zig");
+    _ = @import("ui/BrainView.zig");
     _ = @import("nav/Navigator.zig");
     _ = @import("nav/BuiltinNavigator.zig");
     _ = @import("highlight/Highlighter.zig");

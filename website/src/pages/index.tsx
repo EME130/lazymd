@@ -55,6 +55,10 @@ function SocialProof(): React.JSX.Element {
         <span className={s.badge}>
           <span className={s.badgeIcon}>&#128230;</span> Single Binary
         </span>
+        <span className={s.divider} />
+        <span className={s.badge}>
+          <span className={s.badgeIcon}>&#129504;</span> Knowledge Graph
+        </span>
       </div>
     </section>
   );
@@ -63,12 +67,13 @@ function SocialProof(): React.JSX.Element {
 const features = [
   {icon: '\u2328', title: 'Vim-Native Editing', desc: 'Full modal editing with Normal, Insert, and Command modes. Navigate with hjkl, motions with w/b, delete with dd, undo with u \u2014 muscle-memory compatible.', wide: false},
   {icon: '\u25CE', title: 'Live Preview', desc: 'Rendered markdown in a side panel. Headers, bold, italic, code blocks with syntax highlighting \u2014 all updating as you type.', wide: false},
-  {icon: '\u2588', title: '3-Panel Layout', desc: 'Inspired by lazygit \u2014 file tree, editor, and preview side by side. Toggle and resize with keyboard shortcuts.', wide: false},
+  {icon: '\u2588', title: 'Multi-Panel Layout', desc: 'Inspired by lazygit \u2014 file tree, editor, preview, and brain graph side by side. Toggle panels with Alt+1/2/3.', wide: false},
   {icon: '\u2726', title: 'Syntax Highlighting', desc: 'Built-in highlighting for Zig, Python, JavaScript, TypeScript, Rust, Go, C, C++, Java, and 16+ languages. Theme-aware colors with a pluggable highlighter backend.', wide: true},
   {icon: '\u2699', title: 'Plugin System', desc: 'Register custom commands, hook into editor events, add panels. Build and share community plugins.', wide: false},
   {icon: '\u2192', title: 'Zero Dependencies', desc: 'Pure Zig using only POSIX termios and ANSI escape codes. No runtime dependencies. Fast startup, tiny single binary.', wide: false},
   {icon: '\u2387', title: 'Mouse Support', desc: 'Click to position cursor, scroll with mouse wheel, click panels to focus. Works in iTerm2, Alacritty, kitty, and more.', wide: false},
-  {icon: '\u2B21', title: 'MCP Server', desc: 'Built-in Model Context Protocol server with 15 tools. AI agents like Claude Code and Gemini CLI connect via JSON-RPC 2.0 over stdio.', wide: false},
+  {icon: '\u2B21', title: 'MCP Server', desc: 'Built-in Model Context Protocol server with 22 tools. AI agents like Claude Code and Gemini CLI connect via JSON-RPC 2.0 over stdio.', wide: false},
+  {icon: '\u{1F9E0}', title: 'Brain: Knowledge Graph', desc: 'Obsidian-style graph view for [[wiki-links]]. Visualize connections between notes with a force-directed ASCII layout. Navigate, explore backlinks, and find orphan notes.', wide: true},
   {icon: '\u26A1', title: 'Instant Startup', desc: 'Compiles to a single ~2MB binary. Launches in milliseconds, even on large files. No JVM, no Electron, no wait.', wide: false},
 ];
 
@@ -178,7 +183,7 @@ function Keybindings(): React.JSX.Element {
                 <tr><td><kbd>:q</kbd></td><td>Quit editor</td></tr>
                 <tr><td><kbd>:wq</kbd></td><td>Save and quit</td></tr>
                 <tr><td><kbd>Tab</kbd></td><td>Cycle panels</td></tr>
-                <tr><td><kbd>Alt+1</kbd> <kbd>Alt+2</kbd></td><td>Toggle panels</td></tr>
+                <tr><td><kbd>Alt+1</kbd> <kbd>Alt+2</kbd> <kbd>Alt+3</kbd></td><td>Toggle panels</td></tr>
               </tbody>
             </table>
           </div>
@@ -192,6 +197,8 @@ const mcpTools = [
   'open_file', 'read_document', 'write_document', 'list_headings',
   'edit_section', 'read_section', 'list_tasks', 'update_task',
   'get_breadcrumb', 'move_section', 'search_content', 'get_structure',
+  'list_links', 'get_backlinks', 'get_graph',
+  'get_neighbors', 'find_path', 'get_orphans', 'get_hub_notes',
 ];
 
 function MCPSection(): React.JSX.Element {
@@ -207,10 +214,11 @@ function MCPSection(): React.JSX.Element {
         </p>
         <div className={s.mcpGrid}>
           <div className={s.mcpContent}>
-            <h3>15 tools over JSON-RPC 2.0</h3>
+            <h3>22 tools over JSON-RPC 2.0</h3>
             <p>
               Document tools for reading, writing, and searching. Navigation tools for
               heading-based traversal, task management, and section manipulation.
+              Brain tools for wiki-link analysis, backlink discovery, and graph queries.
             </p>
             <div className={s.mcpTools}>
               {mcpTools.map(t => <span key={t} className={s.mcpTool}>{t}</span>)}
