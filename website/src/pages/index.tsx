@@ -8,11 +8,20 @@ import s from './index.module.css';
 function Hero(): React.JSX.Element {
   return (
     <header className={s.hero}>
-      <div>
-        <h1 className={s.heroTitle}>lazy-md</h1>
+      <div className={s.heroGlow} />
+      <div className={s.heroInner}>
+        <div className={s.heroTag}>
+          <span className={s.heroTagDot} />
+          Written in Zig. Zero dependencies.
+        </div>
+        <h1 className={s.heroTitle}>
+          Markdown editing,<br />
+          reimagined for<br />
+          the terminal.
+        </h1>
         <p className={s.heroSubtitle}>
-          The terminal-based markdown editor with vim keybindings.<br />
-          Fast. Vim-native. Zero dependencies.
+          A vim-native markdown editor with live preview, syntax highlighting,
+          and AI agent integration. Fast by default.
         </p>
         <div className={s.heroActions}>
           <Link className={s.btnPrimary} to="/docs/getting-started/installation">
@@ -27,30 +36,57 @@ function Hero(): React.JSX.Element {
   );
 }
 
+function SocialProof(): React.JSX.Element {
+  return (
+    <section className={s.socialProof}>
+      <div className={s.socialProofInner}>
+        <span className={s.badge}>
+          <span className={s.badgeIcon}>&#9889;</span> Built with Zig
+        </span>
+        <span className={s.divider} />
+        <span className={s.badge}>
+          <span className={s.badgeIcon}>&#128268;</span> MCP Protocol
+        </span>
+        <span className={s.divider} />
+        <span className={s.badge}>
+          <span className={s.badgeIcon}>&#9000;</span> Vim Keybindings
+        </span>
+        <span className={s.divider} />
+        <span className={s.badge}>
+          <span className={s.badgeIcon}>&#128230;</span> Single Binary
+        </span>
+      </div>
+    </section>
+  );
+}
+
 const features = [
-  {icon: '\u2328\uFE0F', title: 'Vim-Native Modal Editing', desc: 'Full vim keybindings with Normal, Insert, and Command modes. Navigate with hjkl, move by word with w/b, delete lines with dd, undo with u, and more — all muscle-memory compatible with vim and neovim.'},
-  {icon: '\uD83D\uDC41\uFE0F', title: 'Live Markdown Preview', desc: 'See your markdown rendered in real-time in a side panel. Headers, bold, italic, code blocks with syntax highlighting for 16+ languages, and lists — all styled inline as you type.'},
-  {icon: '\uD83C\uDFA8', title: 'Syntax Highlighting for 16+ Languages', desc: 'Built-in syntax highlighting for Zig, Python, JavaScript, TypeScript, Rust, Go, C, C++, Java, and more. Theme-aware colors with a pluggable highlighter backend.'},
-  {icon: '\uD83D\uDDB1\uFE0F', title: 'Mouse Support', desc: 'Click to position the cursor, scroll with the mouse wheel, and click panels to switch focus. Works out of the box in modern terminal emulators like iTerm2, Alacritty, and kitty.'},
-  {icon: '\uD83E\uDDE9', title: 'Extensible Plugin System', desc: 'Extend lazy-md with plugins. Register custom commands, hook into editor events, and add custom panels. Build, share, and install community plugins.'},
-  {icon: '\u26A1', title: 'Zero Dependencies', desc: 'Written in pure Zig using only POSIX termios and ANSI escape codes. No external libraries, no runtime dependencies. Fast startup and a tiny single binary.'},
-  {icon: '\uD83D\uDCD0', title: '3-Panel TUI Layout', desc: 'Inspired by lazygit — file tree, editor, and preview panels side by side. Toggle and resize panels with keyboard shortcuts. A familiar layout for terminal power users.'},
-  {icon: '\uD83E\uDD16', title: 'MCP Server for AI Agents', desc: 'Built-in MCP (Model Context Protocol) server with 15 tools. Connect AI agents like Claude Code and Gemini CLI to read, navigate, and edit markdown documents via JSON-RPC 2.0 over stdio.'},
+  {icon: '\u2328', title: 'Vim-Native Editing', desc: 'Full modal editing with Normal, Insert, and Command modes. Navigate with hjkl, motions with w/b, delete with dd, undo with u \u2014 muscle-memory compatible.', wide: false},
+  {icon: '\u25CE', title: 'Live Preview', desc: 'Rendered markdown in a side panel. Headers, bold, italic, code blocks with syntax highlighting \u2014 all updating as you type.', wide: false},
+  {icon: '\u2588', title: '3-Panel Layout', desc: 'Inspired by lazygit \u2014 file tree, editor, and preview side by side. Toggle and resize with keyboard shortcuts.', wide: false},
+  {icon: '\u2726', title: 'Syntax Highlighting', desc: 'Built-in highlighting for Zig, Python, JavaScript, TypeScript, Rust, Go, C, C++, Java, and 16+ languages. Theme-aware colors with a pluggable highlighter backend.', wide: true},
+  {icon: '\u2699', title: 'Plugin System', desc: 'Register custom commands, hook into editor events, add panels. Build and share community plugins.', wide: false},
+  {icon: '\u2192', title: 'Zero Dependencies', desc: 'Pure Zig using only POSIX termios and ANSI escape codes. No runtime dependencies. Fast startup, tiny single binary.', wide: false},
+  {icon: '\u2387', title: 'Mouse Support', desc: 'Click to position cursor, scroll with mouse wheel, click panels to focus. Works in iTerm2, Alacritty, kitty, and more.', wide: false},
+  {icon: '\u2B21', title: 'MCP Server', desc: 'Built-in Model Context Protocol server with 15 tools. AI agents like Claude Code and Gemini CLI connect via JSON-RPC 2.0 over stdio.', wide: false},
+  {icon: '\u26A1', title: 'Instant Startup', desc: 'Compiles to a single ~2MB binary. Launches in milliseconds, even on large files. No JVM, no Electron, no wait.', wide: false},
 ];
 
 function Features(): React.JSX.Element {
   return (
-    <section className={s.features} id="features">
+    <section className={s.sectionAlt} id="features">
       <div className={s.container}>
-        <h2 className={s.sectionTitle}>Why Choose lazy-md?</h2>
+        <div style={{textAlign: 'center'}}>
+          <span className={s.sectionLabel}>Features</span>
+        </div>
+        <h2 className={s.sectionTitle}>Everything you need,<br />nothing you don't.</h2>
         <p className={s.sectionDesc}>
-          lazy-md is a terminal markdown editor designed for developers who live in the terminal.
-          If you use vim, tmux, and the command line daily, lazy-md fits right into your workflow.
+          Built for developers who live in the terminal. If you use vim, tmux, and the command line daily, lazy-md fits right in.
         </p>
         <div className={s.featureGrid}>
-          {features.map(({icon, title, desc}) => (
-            <article key={title} className={s.featureCard}>
-              <div className={s.featureIcon} aria-hidden="true">{icon}</div>
+          {features.map(({icon, title, desc, wide}) => (
+            <article key={title} className={`${s.featureCard} ${wide ? s.featureCardWide : ''}`}>
+              <div className={s.featureIcon}>{icon}</div>
               <h3>{title}</h3>
               <p>{desc}</p>
             </article>
@@ -63,29 +99,34 @@ function Features(): React.JSX.Element {
 
 function Install(): React.JSX.Element {
   return (
-    <section className={s.install} id="installation">
+    <section className={s.section} id="installation">
       <div className={s.container}>
-        <h2 className={s.sectionTitle}>Install lazy-md</h2>
+        <div style={{textAlign: 'center'}}>
+          <span className={s.sectionLabel}>Get Started</span>
+        </div>
+        <h2 className={s.sectionTitle}>Up and running in seconds.</h2>
         <p className={s.sectionDesc}>
-          Get up and running in seconds. lazy-md compiles to a single binary with no runtime dependencies.
+          Compiles to a single binary with zero runtime dependencies.
         </p>
-        <div className={s.installSteps}>
-          <div className={s.installStep}>
+        <div className={s.installGrid}>
+          <div className={s.installCard}>
+            <div className={s.installStep}>1</div>
             <h3>Prerequisites</h3>
-            <p>Requires <a href="https://ziglang.org/download/">Zig</a> 0.15.1 or later.</p>
+            <p>Install <a href="https://ziglang.org/download/">Zig</a> 0.15.1 or later from the official site.</p>
           </div>
-          <div className={s.installStep}>
-            <h3>Build from Source</h3>
+          <div className={s.installCard}>
+            <div className={s.installStep}>2</div>
+            <h3>Build</h3>
             <div className={s.codeBlock}>
-              <code>{`git clone https://github.com/user/lazy-md.git
-cd lazy-md
-zig build
-./zig-out/bin/lazy-md myfile.md`}</code>
+              <code>{`git clone https://github.com/\nuser/lazy-md.git\ncd lazy-md && zig build`}</code>
             </div>
           </div>
-          <div className={s.installStep}>
-            <h3>Pre-built Binaries</h3>
-            <p>Download from <a href="https://github.com/user/lazy-md/releases">GitHub Releases</a> — available for Linux (x86_64) and macOS (x86_64, ARM64).</p>
+          <div className={s.installCard}>
+            <div className={s.installStep}>3</div>
+            <h3>Run</h3>
+            <div className={s.codeBlock}>
+              <code>{`./zig-out/bin/lazy-md myfile.md`}</code>
+            </div>
           </div>
         </div>
       </div>
@@ -95,26 +136,29 @@ zig build
 
 function Keybindings(): React.JSX.Element {
   return (
-    <section className={s.keybindings} id="keybindings">
+    <section className={s.sectionAlt} id="keybindings">
       <div className={s.container}>
-        <h2 className={s.sectionTitle}>Vim Keybindings Reference</h2>
+        <div style={{textAlign: 'center'}}>
+          <span className={s.sectionLabel}>Keybindings</span>
+        </div>
+        <h2 className={s.sectionTitle}>The vim bindings you already know.</h2>
         <p className={s.sectionDesc}>
-          lazy-md supports the vim keybindings you already know. No learning curve if you use vim or neovim.
+          No learning curve if you use vim or neovim. Jump right in.
         </p>
         <div className={s.keybindingTables}>
-          <div>
+          <div className={s.keybindingCard}>
             <h3>Navigation</h3>
             <table>
               <tbody>
                 <tr><td><kbd>h</kbd> <kbd>j</kbd> <kbd>k</kbd> <kbd>l</kbd></td><td>Move cursor</td></tr>
                 <tr><td><kbd>w</kbd> <kbd>b</kbd> <kbd>e</kbd></td><td>Word motions</td></tr>
-                <tr><td><kbd>0</kbd> <kbd>$</kbd> <kbd>^</kbd></td><td>Line start/end</td></tr>
-                <tr><td><kbd>gg</kbd> <kbd>G</kbd></td><td>Top/bottom of file</td></tr>
+                <tr><td><kbd>0</kbd> <kbd>$</kbd> <kbd>^</kbd></td><td>Line start / end</td></tr>
+                <tr><td><kbd>gg</kbd> <kbd>G</kbd></td><td>Top / bottom of file</td></tr>
                 <tr><td><kbd>Ctrl+D</kbd> <kbd>Ctrl+U</kbd></td><td>Half-page scroll</td></tr>
               </tbody>
             </table>
           </div>
-          <div>
+          <div className={s.keybindingCard}>
             <h3>Editing</h3>
             <table>
               <tbody>
@@ -126,7 +170,7 @@ function Keybindings(): React.JSX.Element {
               </tbody>
             </table>
           </div>
-          <div>
+          <div className={s.keybindingCard}>
             <h3>Commands</h3>
             <table>
               <tbody>
@@ -144,39 +188,72 @@ function Keybindings(): React.JSX.Element {
   );
 }
 
+const mcpTools = [
+  'open_file', 'read_document', 'write_document', 'list_headings',
+  'edit_section', 'read_section', 'list_tasks', 'update_task',
+  'get_breadcrumb', 'move_section', 'search_content', 'get_structure',
+];
+
 function MCPSection(): React.JSX.Element {
   return (
-    <section className={s.install} id="mcp-server">
+    <section className={s.section} id="mcp-server">
       <div className={s.container}>
-        <h2 className={s.sectionTitle}>MCP Server for AI Agents</h2>
+        <div style={{textAlign: 'center'}}>
+          <span className={s.sectionLabel}>AI Integration</span>
+        </div>
+        <h2 className={s.sectionTitle}>An MCP server, built in.</h2>
         <p className={s.sectionDesc}>
-          lazy-md doubles as an MCP (Model Context Protocol) server. AI coding agents like Claude Code
-          and Gemini CLI can connect via stdio to read, navigate, and edit markdown documents programmatically.
+          AI agents connect via stdio to read, navigate, and edit markdown documents programmatically.
         </p>
-        <div className={s.installSteps}>
-          <div className={s.installStep}>
-            <h3>Start the MCP Server</h3>
-            <div className={s.codeBlock}>
-              <code>{`lazy-md --mcp-server              # Start server
-lazy-md --mcp-server myfile.md    # Start with file`}</code>
+        <div className={s.mcpGrid}>
+          <div className={s.mcpContent}>
+            <h3>15 tools over JSON-RPC 2.0</h3>
+            <p>
+              Document tools for reading, writing, and searching. Navigation tools for
+              heading-based traversal, task management, and section manipulation.
+            </p>
+            <div className={s.mcpTools}>
+              {mcpTools.map(t => <span key={t} className={s.mcpTool}>{t}</span>)}
             </div>
+            <Link className={s.btnSecondary} to="/docs/mcp-server/overview">
+              MCP Documentation
+            </Link>
           </div>
-          <div className={s.installStep}>
-            <h3>15 Built-in Tools</h3>
-            <p>Document tools (open, read, write, search, edit sections) and navigation tools (read by heading path, list tasks, toggle checkboxes, get breadcrumbs, move sections).</p>
-          </div>
-          <div className={s.installStep}>
-            <h3>Connect Claude Code</h3>
-            <div className={s.codeBlock}>
-              <code>{`claude mcp add lazy-md -- /path/to/lazy-md --mcp-server`}</code>
+          <div className={s.mcpCode}>
+            <div className={s.mcpCodeHeader}>
+              <span className={`${s.mcpCodeTab} ${s.mcpCodeTabActive}`}>Claude Code</span>
+              <span className={s.mcpCodeTab}>Gemini CLI</span>
+            </div>
+            <div className={s.mcpCodeBody}>
+              <code>{`# Add lazy-md as an MCP server
+claude mcp add lazy-md -- \\
+  /path/to/lazy-md --mcp-server
+
+# Start with a file preloaded
+lazy-md --mcp-server myfile.md`}</code>
             </div>
           </div>
         </div>
-        <div className={s.heroActions} style={{marginTop: '2rem'}}>
-          <Link className={s.btnSecondary} to="/docs/mcp-server/overview">
-            MCP Documentation
-          </Link>
-        </div>
+      </div>
+    </section>
+  );
+}
+
+function CTASection(): React.JSX.Element {
+  return (
+    <section className={s.ctaSection}>
+      <div className={s.ctaGlow} />
+      <h2 className={s.ctaTitle}>Ready to try lazy-md?</h2>
+      <p className={s.ctaDesc}>
+        Open source, MIT licensed, and built to last.
+      </p>
+      <div className={s.heroActions}>
+        <Link className={s.btnPrimary} to="/docs/getting-started/installation">
+          Get Started
+        </Link>
+        <Link className={s.btnSecondary} to="https://github.com/user/lazy-md">
+          Star on GitHub
+        </Link>
       </div>
     </section>
   );
@@ -195,10 +272,12 @@ export default function Home(): React.JSX.Element {
         <div className={s.terminalDemo}>
           <TerminalDemo />
         </div>
+        <SocialProof />
         <Features />
         <Install />
         <Keybindings />
         <MCPSection />
+        <CTASection />
       </main>
     </Layout>
   );

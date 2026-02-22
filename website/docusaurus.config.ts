@@ -73,20 +73,6 @@ const config: Config = {
     },
   ],
 
-  metadata: [
-    {name: 'description', content: 'lazy-md is a fast, terminal-based markdown editor with vim keybindings, live preview, syntax highlighting, and a plugin system. Built in Zig with zero dependencies.'},
-    {property: 'og:type', content: 'website'},
-    {property: 'og:site_name', content: 'lazy-md'},
-    {property: 'og:title', content: 'lazy-md — Terminal Markdown Editor with Vim Keybindings'},
-    {property: 'og:description', content: 'A fast, terminal-based markdown editor with vim keybindings, live preview, syntax highlighting, and a plugin system. Built in Zig with zero dependencies.'},
-    {property: 'og:url', content: 'https://lazymd.com'},
-    {name: 'twitter:card', content: 'summary_large_image'},
-    {name: 'twitter:title', content: 'lazy-md — Terminal Markdown Editor with Vim Keybindings'},
-    {name: 'twitter:description', content: 'A fast, terminal-based markdown editor with vim keybindings, live preview, and zero dependencies. Written in Zig.'},
-    {name: 'robots', content: 'index, follow'},
-    {name: 'theme-color', content: '#58a6ff'},
-  ],
-
   presets: [
     [
       'classic',
@@ -117,10 +103,23 @@ const config: Config = {
   ],
 
   themeConfig: {
+    metadata: [
+      {name: 'description', content: 'lazy-md is a fast, terminal-based markdown editor with vim keybindings, live preview, syntax highlighting, and a plugin system. Built in Zig with zero dependencies.'},
+      {property: 'og:type', content: 'website'},
+      {property: 'og:site_name', content: 'lazy-md'},
+      {property: 'og:title', content: 'lazy-md — Terminal Markdown Editor with Vim Keybindings'},
+      {property: 'og:description', content: 'A fast, terminal-based markdown editor with vim keybindings, live preview, syntax highlighting, and a plugin system. Built in Zig with zero dependencies.'},
+      {property: 'og:url', content: 'https://lazymd.com'},
+      {name: 'twitter:card', content: 'summary_large_image'},
+      {name: 'twitter:title', content: 'lazy-md — Terminal Markdown Editor with Vim Keybindings'},
+      {name: 'twitter:description', content: 'A fast, terminal-based markdown editor with vim keybindings, live preview, and zero dependencies. Written in Zig.'},
+      {name: 'robots', content: 'index, follow'},
+      {name: 'theme-color', content: '#6366f1'},
+    ],
     colorMode: {
       defaultMode: 'dark',
       disableSwitch: false,
-      respectPrefersColorScheme: true,
+      respectPrefersColorScheme: false,
     },
     navbar: {
       title: 'lazy-md',
