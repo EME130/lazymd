@@ -34,6 +34,14 @@
   border-bottom: 1px solid #30363d;
 }
 
+[data-theme='dark'] .navbar-sidebar {
+  background-color: #0d1117;
+}
+
+[data-theme='dark'] .navbar-sidebar__backdrop {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
 [data-theme='dark'] .footer--dark {
   --ifm-footer-background-color: #0d1117;
   border-top: 1px solid #30363d;
