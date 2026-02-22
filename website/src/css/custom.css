@@ -131,16 +131,35 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.02em;
 }
 
+[data-theme='dark'] .navbar__toggle {
+  color: #e4e4e7;
+}
+
 [data-theme='dark'] .navbar-sidebar {
-  background-color: #09090b;
+  background-color: #111113;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme='dark'] .navbar-sidebar__brand {
+  background-color: #111113;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme='dark'] .navbar-sidebar__close {
+  color: #e4e4e7;
 }
 
 [data-theme='dark'] .navbar-sidebar .menu {
-  background-color: #09090b;
+  background-color: #111113;
+  padding: 12px 0;
 }
 
 [data-theme='dark'] .navbar-sidebar .menu__link {
   color: #e4e4e7;
+  border-radius: 8px;
+  margin: 2px 12px;
+  padding: 10px 16px;
 }
 
 [data-theme='dark'] .navbar-sidebar .menu__link:hover {
