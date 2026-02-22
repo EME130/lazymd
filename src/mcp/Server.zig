@@ -234,6 +234,14 @@ fn dispatchTool(self: *Self, name: []const u8, args: ?std.json.Value) ![]const u
         return self.toolGetBacklinks(args);
     } else if (std.mem.eql(u8, name, "get_graph")) {
         return self.toolGetGraph(args);
+    } else if (std.mem.eql(u8, name, "get_neighbors")) {
+        return self.toolGetNeighbors(args);
+    } else if (std.mem.eql(u8, name, "find_path")) {
+        return self.toolFindPath(args);
+    } else if (std.mem.eql(u8, name, "get_orphans")) {
+        return self.toolGetOrphans();
+    } else if (std.mem.eql(u8, name, "get_hub_notes")) {
+        return self.toolGetHubNotes(args);
     } else {
         return error.ToolNotFound;
     }
@@ -813,6 +821,238 @@ fn toolGetGraph(self: *Self, args: ?std.json.Value) ![]const u8 {
         graph.nodeCount(), graph.edgeCount(), orphans.len,
     });
     try w.writeAll("}");
+
+    return result.toOwnedSlice(self.allocator);
+}
+
+fn toolGetNeighbors(self: *Self, args: ?std.json.Value) ![]const u8 {
+    const note_arg = getStringArg(args, "note");
+    const depth_arg = getIntArg(args, "depth");
+    const depth: u16 = if (depth_arg) |d| (if (d > 0 and d <= 10) @intCast(d) else 1) else 1;
+
+    const stem = note_arg orelse blk: {
+        const fp = self.file_path orelse return try self.allocator.dupe(u8, "No file open and no 'note' argument provided");
+        const basename = std.fs.path.basename(fp);
+        if (std.mem.lastIndexOfScalar(u8, basename, '.')) |dot| break :blk basename[0..dot];
+        break :blk basename;
+    };
+
+    var graph = Scanner.scan(self.allocator, ".") catch {
+        return try self.allocator.dupe(u8, "Failed to scan vault");
+    };
+    defer graph.deinit();
+
+    const node_id = graph.resolve(stem) orelse {
+        return std.fmt.allocPrint(self.allocator, "Note '{s}' not found in vault", .{stem});
+    };
+
+    const neighbors = graph.getNeighbors(node_id, depth) catch {
+        return try self.allocator.dupe(u8, "Failed to compute neighbors");
+    };
+    defer self.allocator.free(neighbors);
+
+    var result: std.ArrayList(u8) = .{};
+    const w = result.writer(self.allocator);
+
+    const node = graph.nodes.items[node_id];
+    try w.print("Neighbors of '{s}' (depth={d}):\n\n", .{ node.name, depth });
+
+    // Outgoing links
+    try w.writeAll("Outgoing links:\n");
+    if (node.out_links.len == 0) {
+        try w.writeAll("  (none)\n");
+    } else {
+        for (node.out_links) |out| {
+            const target = graph.nodes.items[out];
+            try w.print("  -> {s} ({s}) [out:{d} in:{d}]\n", .{ target.name, target.path, target.out_links.len, target.in_links.len });
+        }
+    }
+
+    // Backlinks
+    try w.writeAll("\nBacklinks (incoming):\n");
+    if (node.in_links.len == 0) {
+        try w.writeAll("  (none)\n");
+    } else {
+        for (node.in_links) |in_id| {
+            const source = graph.nodes.items[in_id];
+            try w.print("  <- {s} ({s}) [out:{d} in:{d}]\n", .{ source.name, source.path, source.out_links.len, source.in_links.len });
+        }
+    }
+
+    if (depth > 1) {
+        try w.print("\nAll reachable within {d} hops: {d} notes\n", .{ depth, neighbors.len });
+        for (neighbors) |nid| {
+            if (nid == node_id) continue;
+            const n = graph.nodes.items[nid];
+            try w.print("  {s} ({s})\n", .{ n.name, n.path });
+        }
+    }
+
+    return result.toOwnedSlice(self.allocator);
+}
+
+fn toolFindPath(self: *Self, args: ?std.json.Value) ![]const u8 {
+    const from_str = getStringArg(args, "from") orelse return error.MissingArgument;
+    const to_str = getStringArg(args, "to") orelse return error.MissingArgument;
+
+    var graph = Scanner.scan(self.allocator, ".") catch {
+        return try self.allocator.dupe(u8, "Failed to scan vault");
+    };
+    defer graph.deinit();
+
+    const from_id = graph.resolve(from_str) orelse {
+        return std.fmt.allocPrint(self.allocator, "Source note '{s}' not found", .{from_str});
+    };
+    const to_id = graph.resolve(to_str) orelse {
+        return std.fmt.allocPrint(self.allocator, "Target note '{s}' not found", .{to_str});
+    };
+
+    if (from_id == to_id) {
+        return std.fmt.allocPrint(self.allocator, "'{s}' and '{s}' are the same note", .{ from_str, to_str });
+    }
+
+    // BFS to find shortest path
+    const n = graph.nodeCount();
+    var visited = try self.allocator.alloc(bool, n);
+    defer self.allocator.free(visited);
+    @memset(visited, false);
+
+    // Parent tracking for path reconstruction
+    var parent = try self.allocator.alloc(i32, n);
+    defer self.allocator.free(parent);
+    @memset(parent, -1);
+
+    const QItem = struct { id: u16 };
+    var queue: std.ArrayList(QItem) = .{};
+    defer queue.deinit(self.allocator);
+
+    visited[from_id] = true;
+    try queue.append(self.allocator, .{ .id = from_id });
+
+    var found = false;
+    while (queue.items.len > 0) {
+        const item = queue.orderedRemove(0);
+        if (item.id == to_id) {
+            found = true;
+            break;
+        }
+
+        const node = graph.nodes.items[item.id];
+        // Traverse both directions
+        for (node.out_links) |next| {
+            if (!visited[next]) {
+                visited[next] = true;
+                parent[next] = @intCast(item.id);
+                try queue.append(self.allocator, .{ .id = next });
+            }
+        }
+        for (node.in_links) |next| {
+            if (!visited[next]) {
+                visited[next] = true;
+                parent[next] = @intCast(item.id);
+                try queue.append(self.allocator, .{ .id = next });
+            }
+        }
+    }
+
+    if (!found) {
+        return std.fmt.allocPrint(self.allocator, "No path exists between '{s}' and '{s}'", .{ from_str, to_str });
+    }
+
+    // Reconstruct path
+    var path: std.ArrayList(u16) = .{};
+    defer path.deinit(self.allocator);
+    var cur: u16 = to_id;
+    while (cur != from_id) {
+        try path.append(self.allocator, cur);
+        cur = @intCast(parent[cur]);
+    }
+    try path.append(self.allocator, from_id);
+
+    // Reverse and format
+    var result: std.ArrayList(u8) = .{};
+    const w = result.writer(self.allocator);
+    try w.print("Path ({d} hops):\n", .{path.items.len - 1});
+    var i: usize = path.items.len;
+    while (i > 0) {
+        i -= 1;
+        const node = graph.nodes.items[path.items[i]];
+        if (i < path.items.len - 1) try w.writeAll(" -> ");
+        try w.print("{s}", .{node.name});
+    }
+    try w.writeByte('\n');
+
+    return result.toOwnedSlice(self.allocator);
+}
+
+fn toolGetOrphans(self: *Self) ![]const u8 {
+    var graph = Scanner.scan(self.allocator, ".") catch {
+        return try self.allocator.dupe(u8, "Failed to scan vault");
+    };
+    defer graph.deinit();
+
+    const orphans = graph.getOrphans() catch {
+        return try self.allocator.dupe(u8, "Failed to compute orphans");
+    };
+    defer self.allocator.free(orphans);
+
+    if (orphans.len == 0) {
+        return std.fmt.allocPrint(self.allocator, "No orphan notes found. All {d} notes are connected.", .{graph.nodeCount()});
+    }
+
+    var result: std.ArrayList(u8) = .{};
+    const w = result.writer(self.allocator);
+    try w.print("Orphan notes ({d}/{d} notes have no links):\n\n", .{ orphans.len, graph.nodeCount() });
+    for (orphans) |oid| {
+        const node = graph.nodes.items[oid];
+        try w.print("  {s} ({s})\n", .{ node.name, node.path });
+    }
+
+    return result.toOwnedSlice(self.allocator);
+}
+
+fn toolGetHubNotes(self: *Self, args: ?std.json.Value) ![]const u8 {
+    const limit_arg = getIntArg(args, "limit");
+    const limit: usize = if (limit_arg) |l| (if (l > 0 and l <= 100) @intCast(l) else 10) else 10;
+
+    var graph = Scanner.scan(self.allocator, ".") catch {
+        return try self.allocator.dupe(u8, "Failed to scan vault");
+    };
+    defer graph.deinit();
+
+    if (graph.nodeCount() == 0) {
+        return try self.allocator.dupe(u8, "No notes found in vault");
+    }
+
+    // Build sortable array of (node_id, total_links)
+    const Entry = struct { id: u16, total: usize };
+    var entries = try self.allocator.alloc(Entry, graph.nodeCount());
+    defer self.allocator.free(entries);
+
+    for (graph.nodes.items, 0..) |node, i| {
+        entries[i] = .{
+            .id = @intCast(i),
+            .total = node.out_links.len + node.in_links.len,
+        };
+    }
+
+    // Sort by total links descending
+    std.mem.sort(Entry, entries, {}, struct {
+        fn lessThan(_: void, a: Entry, b: Entry) bool {
+            return a.total > b.total;
+        }
+    }.lessThan);
+
+    var result: std.ArrayList(u8) = .{};
+    const w = result.writer(self.allocator);
+    const shown = @min(limit, entries.len);
+    try w.print("Top {d} most connected notes:\n\n", .{shown});
+    for (entries[0..shown], 0..) |entry, rank| {
+        const node = graph.nodes.items[entry.id];
+        try w.print("  {d}. {s} — {d} links (out:{d} in:{d}) — {s}\n", .{
+            rank + 1, node.name, entry.total, node.out_links.len, node.in_links.len, node.path,
+        });
+    }
 
     return result.toOwnedSlice(self.allocator);
 }

@@ -54,7 +54,7 @@ Link resolution is case-insensitive — `[[readme]]` resolves to `README.md`.
 
 ## MCP brain tools
 
-Three MCP tools expose the knowledge graph to AI agents:
+Seven MCP tools expose the knowledge graph to AI agents:
 
 ### `list_links`
 
@@ -78,6 +78,38 @@ Return the full connection graph as JSON. Optionally scope to neighbors of a nod
 
 ```json
 {"method": "tools/call", "params": {"name": "get_graph", "arguments": {"node": "README", "depth": 2}}}
+```
+
+### `get_neighbors`
+
+Get all directly connected notes — outgoing links and backlinks — with link counts. Great for exploring the local graph.
+
+```json
+{"method": "tools/call", "params": {"name": "get_neighbors", "arguments": {"note": "daily-note", "depth": 2}}}
+```
+
+### `find_path`
+
+Find the shortest path between two notes. Useful for understanding how ideas connect across the vault.
+
+```json
+{"method": "tools/call", "params": {"name": "find_path", "arguments": {"from": "README", "to": "daily-note"}}}
+```
+
+### `get_orphans`
+
+List all notes with zero links — not connected to the knowledge graph.
+
+```json
+{"method": "tools/call", "params": {"name": "get_orphans"}}
+```
+
+### `get_hub_notes`
+
+Find the most connected notes in the vault, ranked by total link count.
+
+```json
+{"method": "tools/call", "params": {"name": "get_hub_notes", "arguments": {"limit": 5}}}
 ```
 
 ## Architecture

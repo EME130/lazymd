@@ -264,6 +264,62 @@
           }
         }
       }
+    },
+    {
+      "name": "get_neighbors",
+      "description": "Get all directly connected notes for a given note — both outgoing links and backlinks. Returns each neighbor with its name, path, direction (outgoing/incoming), and link counts. Great for exploring the local graph around a note.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "description": "Filename stem to find neighbors for (e.g. 'daily-note'). Defaults to the current open file."
+          },
+          "depth": {
+            "type": "integer",
+            "description": "How many hops to traverse. 1 = direct neighbors only (default), 2 = neighbors of neighbors, etc."
+          }
+        }
+      }
+    },
+    {
+      "name": "find_path",
+      "description": "Find the shortest path between two notes in the knowledge graph. Returns the sequence of notes connecting them, or reports if no path exists. Useful for understanding how ideas connect.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Filename stem of the starting note"
+          },
+          "to": {
+            "type": "string",
+            "description": "Filename stem of the target note"
+          }
+        },
+        "required": ["from", "to"]
+      }
+    },
+    {
+      "name": "get_orphans",
+      "description": "List all orphan notes — files with zero incoming and zero outgoing [[wiki-links]]. These are isolated notes not connected to the knowledge graph.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_hub_notes",
+      "description": "Find the most connected notes in the vault, ranked by total link count (outgoing + incoming). Useful for identifying central topics and key knowledge nodes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of results to return. Defaults to 10."
+          }
+        }
+      }
     }
   ]
 }

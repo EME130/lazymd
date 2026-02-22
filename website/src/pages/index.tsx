@@ -72,7 +72,7 @@ const features = [
   {icon: '\u2699', title: 'Plugin System', desc: 'Register custom commands, hook into editor events, add panels. Build and share community plugins.', wide: false},
   {icon: '\u2192', title: 'Zero Dependencies', desc: 'Pure Zig using only POSIX termios and ANSI escape codes. No runtime dependencies. Fast startup, tiny single binary.', wide: false},
   {icon: '\u2387', title: 'Mouse Support', desc: 'Click to position cursor, scroll with mouse wheel, click panels to focus. Works in iTerm2, Alacritty, kitty, and more.', wide: false},
-  {icon: '\u2B21', title: 'MCP Server', desc: 'Built-in Model Context Protocol server with 18 tools. AI agents like Claude Code and Gemini CLI connect via JSON-RPC 2.0 over stdio.', wide: false},
+  {icon: '\u2B21', title: 'MCP Server', desc: 'Built-in Model Context Protocol server with 22 tools. AI agents like Claude Code and Gemini CLI connect via JSON-RPC 2.0 over stdio.', wide: false},
   {icon: '\u{1F9E0}', title: 'Brain: Knowledge Graph', desc: 'Obsidian-style graph view for [[wiki-links]]. Visualize connections between notes with a force-directed ASCII layout. Navigate, explore backlinks, and find orphan notes.', wide: true},
   {icon: '\u26A1', title: 'Instant Startup', desc: 'Compiles to a single ~2MB binary. Launches in milliseconds, even on large files. No JVM, no Electron, no wait.', wide: false},
 ];
@@ -198,6 +198,7 @@ const mcpTools = [
   'edit_section', 'read_section', 'list_tasks', 'update_task',
   'get_breadcrumb', 'move_section', 'search_content', 'get_structure',
   'list_links', 'get_backlinks', 'get_graph',
+  'get_neighbors', 'find_path', 'get_orphans', 'get_hub_notes',
 ];
 
 function MCPSection(): React.JSX.Element {
@@ -213,7 +214,7 @@ function MCPSection(): React.JSX.Element {
         </p>
         <div className={s.mcpGrid}>
           <div className={s.mcpContent}>
-            <h3>18 tools over JSON-RPC 2.0</h3>
+            <h3>22 tools over JSON-RPC 2.0</h3>
             <p>
               Document tools for reading, writing, and searching. Navigation tools for
               heading-based traversal, task management, and section manipulation.

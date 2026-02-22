@@ -50,7 +50,7 @@ lazy-md --mcp-server              # Start MCP server
 lazy-md --mcp-server myfile.md    # Start with file preloaded
 ```
 
-**18 tools exposed**:
+**22 tools exposed**:
 
 Document tools: `open_file`, `read_document`, `write_document`, `list_headings`, `edit_section`, `insert_text`, `delete_lines`, `search_content`, `get_structure`
 
@@ -66,6 +66,10 @@ Brain tools (knowledge graph via `[[wiki-links]]`):
 - `list_links` — list outgoing wiki-links from the current document
 - `get_backlinks` — find files that link TO a given note
 - `get_graph` — return connection graph as JSON (nodes, edges, stats)
+- `get_neighbors` — get directly connected notes (outgoing + backlinks) with link counts
+- `find_path` — find shortest path between two notes
+- `get_orphans` — list notes with zero links (isolated)
+- `get_hub_notes` — find most connected notes ranked by link count
 
 ### Claude Code
 ```bash
