@@ -2,6 +2,8 @@ const std = @import("std");
 const Buffer = @import("../Buffer.zig");
 const Navigator = @import("../nav/Navigator.zig");
 const BuiltinNavigator = @import("../nav/BuiltinNavigator.zig");
+const Scanner = @import("../brain/Scanner.zig");
+const Graph = @import("../brain/Graph.zig");
 const Allocator = std.mem.Allocator;
 const posix = std.posix;
 
@@ -226,6 +228,12 @@ fn dispatchTool(self: *Self, name: []const u8, args: ?std.json.Value) ![]const u
         return self.toolMoveSection(args);
     } else if (std.mem.eql(u8, name, "read_section_range")) {
         return self.toolReadSectionRange(args);
+    } else if (std.mem.eql(u8, name, "list_links")) {
+        return self.toolListLinks();
+    } else if (std.mem.eql(u8, name, "get_backlinks")) {
+        return self.toolGetBacklinks(args);
+    } else if (std.mem.eql(u8, name, "get_graph")) {
+        return self.toolGetGraph(args);
     } else {
         return error.ToolNotFound;
     }
@@ -597,6 +605,225 @@ fn toolReadSectionRange(self: *Self, args: ?std.json.Value) ![]const u8 {
             return std.fmt.allocPrint(self.allocator, "Heading path '{s}' not found", .{heading_path});
         return err;
     };
+}
+
+// ── Brain Tool Implementations ────────────────────────────────────────
+
+fn toolListLinks(self: *Self) ![]const u8 {
+    const content = try self.getBufferContent();
+    defer self.allocator.free(content);
+
+    var result: std.ArrayList(u8) = .{};
+    const w = result.writer(self.allocator);
+
+    try w.writeAll("[");
+    var first = true;
+    var i: usize = 0;
+    var line_num: usize = 1;
+    while (i < content.len) {
+        if (content[i] == '\n') {
+            line_num += 1;
+            i += 1;
+            continue;
+        }
+        if (i + 3 < content.len and content[i] == '[' and content[i + 1] == '[') {
+            const start = i + 2;
+            if (findWikiLinkEnd(content, start)) |end| {
+                const raw = content[start..end];
+                const target = if (std.mem.indexOfScalar(u8, raw, '|')) |pipe| raw[0..pipe] else raw;
+                if (target.len > 0) {
+                    if (!first) try w.writeAll(",");
+                    first = false;
+                    const escaped_target = try jsonStringify(self.allocator, target);
+                    defer self.allocator.free(escaped_target);
+                    try w.print("{{\"target\":{s},\"line\":{}}}", .{ escaped_target, line_num });
+                }
+                i = end + 2;
+                continue;
+            }
+        }
+        i += 1;
+    }
+    try w.writeAll("]");
+
+    if (first) {
+        result.deinit(self.allocator);
+        return try self.allocator.dupe(u8, "No [[wiki-links]] found in current document");
+    }
+
+    return result.toOwnedSlice(self.allocator);
+}
+
+fn toolGetBacklinks(self: *Self, args: ?std.json.Value) ![]const u8 {
+    // Determine target note stem
+    const note_arg = getStringArg(args, "note");
+    const stem = note_arg orelse blk: {
+        const fp = self.file_path orelse return try self.allocator.dupe(u8, "No file open and no 'note' argument provided");
+        const basename = std.fs.path.basename(fp);
+        if (std.mem.lastIndexOfScalar(u8, basename, '.')) |dot| break :blk basename[0..dot];
+        break :blk basename;
+    };
+
+    const pattern = try std.fmt.allocPrint(self.allocator, "[[{s}]]", .{stem});
+    defer self.allocator.free(pattern);
+    const pattern_aliased = try std.fmt.allocPrint(self.allocator, "[[{s}|", .{stem});
+    defer self.allocator.free(pattern_aliased);
+
+    var result: std.ArrayList(u8) = .{};
+    const w = result.writer(self.allocator);
+    try w.writeAll("[");
+    var first = true;
+
+    var dir = std.fs.cwd().openDir(".", .{ .iterate = true }) catch {
+        result.deinit(self.allocator);
+        return try self.allocator.dupe(u8, "Cannot scan working directory");
+    };
+    defer dir.close();
+
+    var iter = dir.iterate();
+    while (iter.next() catch null) |entry| {
+        if (entry.kind != .file) continue;
+        if (!std.mem.endsWith(u8, entry.name, ".md") and !std.mem.endsWith(u8, entry.name, ".rndm")) continue;
+
+        // Skip self
+        if (self.file_path) |fp| {
+            if (std.mem.eql(u8, std.fs.path.basename(fp), entry.name)) continue;
+        }
+
+        const file = dir.openFile(entry.name, .{}) catch continue;
+        defer file.close();
+        var read_buf: [65536]u8 = undefined;
+        const n = file.readAll(&read_buf) catch continue;
+        const file_content = read_buf[0..n];
+
+        if (containsIgnoreCase(file_content, pattern) or containsIgnoreCase(file_content, pattern_aliased)) {
+            // Find the line containing the link
+            var line_num: usize = 1;
+            var context_line: []const u8 = "";
+            var pos: usize = 0;
+            for (file_content, 0..) |c, ci| {
+                if (c == '\n') {
+                    const line = file_content[pos..ci];
+                    if (containsIgnoreCase(line, pattern) or containsIgnoreCase(line, pattern_aliased)) {
+                        context_line = line;
+                        break;
+                    }
+                    line_num += 1;
+                    pos = ci + 1;
+                }
+            }
+            // Check last line
+            if (context_line.len == 0 and pos < file_content.len) {
+                context_line = file_content[pos..];
+            }
+
+            if (!first) try w.writeAll(",");
+            first = false;
+            const escaped_file = try jsonStringify(self.allocator, entry.name);
+            defer self.allocator.free(escaped_file);
+            const ctx_trunc = context_line[0..@min(context_line.len, 100)];
+            const escaped_ctx = try jsonStringify(self.allocator, ctx_trunc);
+            defer self.allocator.free(escaped_ctx);
+            try w.print("{{\"file\":{s},\"line\":{},\"context\":{s}}}", .{ escaped_file, line_num, escaped_ctx });
+        }
+    }
+
+    try w.writeAll("]");
+
+    if (first) {
+        result.deinit(self.allocator);
+        return std.fmt.allocPrint(self.allocator, "No backlinks found for '{s}'", .{stem});
+    }
+
+    return result.toOwnedSlice(self.allocator);
+}
+
+fn toolGetGraph(self: *Self, args: ?std.json.Value) ![]const u8 {
+    var graph = Scanner.scan(self.allocator, ".") catch {
+        return try self.allocator.dupe(u8, "Failed to scan vault");
+    };
+    defer graph.deinit();
+
+    const center_node = getStringArg(args, "node");
+    const depth_arg = getIntArg(args, "depth");
+    const depth: u16 = if (depth_arg) |d| (if (d > 0 and d <= 10) @intCast(d) else 2) else 2;
+
+    // Determine visible nodes
+    var visible_nodes: ?[]u16 = null;
+    defer if (visible_nodes) |vn| self.allocator.free(vn);
+
+    if (center_node) |cn| {
+        if (graph.resolve(cn)) |nid| {
+            visible_nodes = graph.getNeighbors(nid, depth) catch null;
+        }
+    }
+
+    var result: std.ArrayList(u8) = .{};
+    const w = result.writer(self.allocator);
+
+    // Nodes
+    try w.writeAll("{\"nodes\":[");
+    var first = true;
+    for (graph.nodes.items) |node| {
+        if (visible_nodes) |vn| {
+            var found = false;
+            for (vn) |v| {
+                if (v == node.id) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) continue;
+        }
+        if (!first) try w.writeAll(",");
+        first = false;
+        const escaped_name = try jsonStringify(self.allocator, node.name);
+        defer self.allocator.free(escaped_name);
+        const escaped_path = try jsonStringify(self.allocator, node.path);
+        defer self.allocator.free(escaped_path);
+        try w.print("{{\"id\":{},\"name\":{s},\"path\":{s},\"out_links\":{},\"in_links\":{}}}", .{
+            node.id, escaped_name, escaped_path, node.out_links.len, node.in_links.len,
+        });
+    }
+    try w.writeAll("],");
+
+    // Edges
+    try w.writeAll("\"edges\":[");
+    first = true;
+    for (graph.edges.items) |edge| {
+        if (visible_nodes) |vn| {
+            var from_ok = false;
+            var to_ok = false;
+            for (vn) |v| {
+                if (v == edge.from) from_ok = true;
+                if (v == edge.to) to_ok = true;
+            }
+            if (!from_ok or !to_ok) continue;
+        }
+        if (!first) try w.writeAll(",");
+        first = false;
+        try w.print("{{\"from\":{},\"to\":{}}}", .{ edge.from, edge.to });
+    }
+    try w.writeAll("],");
+
+    // Stats
+    const orphans = graph.getOrphans() catch &.{};
+    defer if (orphans.len > 0) self.allocator.free(orphans);
+    try w.print("\"stats\":{{\"total_notes\":{},\"total_links\":{},\"orphans\":{}}}", .{
+        graph.nodeCount(), graph.edgeCount(), orphans.len,
+    });
+    try w.writeAll("}");
+
+    return result.toOwnedSlice(self.allocator);
+}
+
+fn findWikiLinkEnd(content: []const u8, start: usize) ?usize {
+    var i = start;
+    while (i + 1 < content.len) : (i += 1) {
+        if (content[i] == ']' and content[i + 1] == ']') return i;
+        if (content[i] == '\n') return null;
+    }
+    return null;
 }
 
 // ── JSON-RPC Response Helpers ─────────────────────────────────────────

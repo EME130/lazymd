@@ -226,6 +226,44 @@
         },
         "required": ["heading_path"]
       }
+    },
+    {
+      "name": "list_links",
+      "description": "List all outgoing [[wiki-links]] from the current document. Returns each link target with its line number and whether it resolves to a known file.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_backlinks",
+      "description": "Find all files in the vault that link TO a given note via [[wiki-links]]. Scans all .md/.rndm files in the working directory.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "description": "Filename stem to find backlinks for (e.g. 'daily-note'). Defaults to the current open file."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_graph",
+      "description": "Return the vault's connection graph as JSON. Shows nodes (files), edges (wiki-links between them), and stats. Optionally scope to neighbors of a specific node.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "string",
+            "description": "Optional filename stem to center the graph on. Returns only neighbors within depth."
+          },
+          "depth": {
+            "type": "integer",
+            "description": "How many hops from the center node to include. Defaults to 2. Ignored without 'node'."
+          }
+        }
+      }
     }
   ]
 }
