@@ -135,6 +135,32 @@ h1, h2, h3, h4, h5, h6 {
   background-color: #09090b;
 }
 
+[data-theme='dark'] .navbar-sidebar .menu {
+  background-color: #09090b;
+}
+
+[data-theme='dark'] .navbar-sidebar .menu__link {
+  color: #e4e4e7;
+}
+
+[data-theme='dark'] .navbar-sidebar .menu__link:hover {
+  color: var(--ifm-color-primary);
+  background-color: rgba(99, 102, 241, 0.08);
+}
+
+[data-theme='dark'] .navbar-sidebar .menu__link--active {
+  color: var(--ifm-color-primary);
+  background-color: rgba(99, 102, 241, 0.08);
+}
+
+[data-theme='dark'] .navbar-sidebar .navbar__link {
+  color: #e4e4e7;
+}
+
+[data-theme='dark'] .navbar-sidebar .navbar__link:hover {
+  color: var(--ifm-color-primary);
+}
+
 [data-theme='dark'] .navbar-sidebar__backdrop {
   background-color: rgba(0, 0, 0, 0.7);
 }
