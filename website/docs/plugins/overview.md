@@ -1,7 +1,8 @@
 ---
 title: Plugin System Overview
 sidebar_position: 1
-description: How the lazy-md plugin system works
+description: "lazy-md's extensible plugin system — register custom commands, hook into editor events, add custom panels, and extend the status bar using Zig vtable interfaces."
+keywords: [lazy-md plugins, plugin system, editor plugins, zig plugin, extensible editor, custom commands]
 ---
 
 # Plugin System Overview

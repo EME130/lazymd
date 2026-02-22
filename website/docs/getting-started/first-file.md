@@ -1,7 +1,8 @@
 ---
 title: Your First File
 sidebar_position: 3
-description: Understanding the lazy-md interface
+description: Open your first markdown file in lazy-md and explore the three-panel layout — file tree, vim editor, and live preview side by side in your terminal.
+keywords: [lazy-md interface, three panel layout, markdown file tree, live markdown preview, terminal editor layout]
 ---
 
 # Your First File

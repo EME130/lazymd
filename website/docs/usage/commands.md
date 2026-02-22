@@ -1,7 +1,8 @@
 ---
 title: Commands
 sidebar_position: 4
-description: Command mode reference
+description: "lazy-md command mode reference — save, quit, open files, and all : commands. Vim-compatible command-line operations for the terminal markdown editor."
+keywords: [vim commands, save quit, command mode, wq, terminal editor commands, lazy-md commands]
 ---
 
 # Commands

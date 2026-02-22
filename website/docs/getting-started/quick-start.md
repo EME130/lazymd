@@ -1,7 +1,8 @@
 ---
 title: Quick Start
 sidebar_position: 2
-description: Get up and running with lazy-md in under a minute
+description: Get started with lazy-md in under a minute. Open markdown files, use vim keybindings to edit, and save — all from your terminal.
+keywords: [lazy-md quick start, terminal markdown editing, vim markdown tutorial, lazy-md getting started]
 ---
 
 # Quick Start

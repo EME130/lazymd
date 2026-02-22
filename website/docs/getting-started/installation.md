@@ -1,7 +1,8 @@
 ---
 title: Installation
 sidebar_position: 1
-description: How to install lazy-md on your system
+description: How to install lazy-md, the terminal-based markdown editor with vim keybindings. Build from source with Zig or download pre-built binaries for Linux and macOS.
+keywords: [lazy-md install, terminal markdown editor install, zig markdown editor, lazy-md setup, build lazy-md]
 ---
 
 # Installation
