@@ -20,6 +20,7 @@ const sidebars: SidebarsConfig = {
         'usage/editing',
         'usage/commands',
         'usage/panels-layout',
+        'usage/brain-graph',
         'usage/mouse-support',
       ],
     },

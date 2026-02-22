@@ -20,6 +20,13 @@ zig build test   # Run tests
 ```
 src/
   main.zig           # Entry point (TUI + MCP mode dispatch)
+  brain/
+    Graph.zig          # Knowledge graph (nodes, edges, backlinks, BFS)
+    Scanner.zig        # Recursive vault scanner for [[wiki-links]]
+  ui/
+    Layout.zig         # Panel layout (file_tree, editor, preview, brain)
+    Preview.zig        # Rendered markdown preview panel
+    BrainView.zig      # Force-directed ASCII graph panel
   mcp/
     Server.zig       # MCP server (JSON-RPC 2.0 over stdio)
     tools.json       # Tool definitions (embedded at compile time)
@@ -43,7 +50,7 @@ lazy-md --mcp-server              # Start MCP server
 lazy-md --mcp-server myfile.md    # Start with file preloaded
 ```
 
-**15 tools exposed**:
+**18 tools exposed**:
 
 Document tools: `open_file`, `read_document`, `write_document`, `list_headings`, `edit_section`, `insert_text`, `delete_lines`, `search_content`, `get_structure`
 
@@ -54,6 +61,11 @@ Navigation tools (via switchable `Navigator` vtable):
 - `get_breadcrumb` — get heading hierarchy for a line (e.g. `"Plan > Step 1 > Subtask A"`)
 - `move_section` — relocate a section after/before another heading
 - `read_section_range` — read numbered lines from a section with optional offset/limit
+
+Brain tools (knowledge graph via `[[wiki-links]]`):
+- `list_links` — list outgoing wiki-links from the current document
+- `get_backlinks` — find files that link TO a given note
+- `get_graph` — return connection graph as JSON (nodes, edges, stats)
 
 ### Claude Code
 ```bash
