@@ -48,21 +48,35 @@ A terminal-based markdown editor written in Zig. Inspired by [lazygit](https://g
 
 ## Install
 
-Requires [Zig](https://ziglang.org/download/) 0.15.1+.
+**Linux:**
 
 ```bash
-git clone https://github.com/user/lazy-md.git
-cd lazy-md
+curl -fsSL https://raw.githubusercontent.com/EME130/lazymd/main/scripts/install-linux.sh | bash
+```
+
+**macOS:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/EME130/lazymd/main/scripts/install-macos.sh | bash
+```
+
+**Windows** (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/EME130/lazymd/main/scripts/install-windows.ps1 | iex
+```
+
+**From source** (all platforms — requires [Zig](https://ziglang.org/download/) 0.15.1+):
+
+```bash
+git clone https://github.com/EME130/lazymd.git
+cd lazymd
 zig build
+cp zig-out/bin/lazy-md /usr/local/bin/   # or add to your PATH
 ```
 
-The binary is at `zig-out/bin/lazy-md`. Optionally copy it to your PATH:
-
-```bash
-cp zig-out/bin/lazy-md /usr/local/bin/
-```
-
-Pre-built binaries for Linux and macOS are available on the [Releases](https://github.com/user/lazy-md/releases) page.
+Pre-built binaries are available on the [Releases](https://github.com/EME130/lazymd/releases) page.
+See detailed guides: [Linux](docs/install-linux.md) | [macOS](docs/install-macos.md) | [Windows](docs/install-windows.md)
 
 ## Quick Start
 
