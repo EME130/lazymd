@@ -85,8 +85,17 @@
 
 .sectionTitle {
   font-size: 2rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   text-align: center;
+}
+
+.sectionDesc {
+  text-align: center;
+  color: #8b949e;
+  max-width: 650px;
+  margin: 0 auto 2rem;
+  font-size: 1.05rem;
+  line-height: 1.6;
 }
 
 .featureGrid {

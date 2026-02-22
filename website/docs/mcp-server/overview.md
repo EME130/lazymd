@@ -1,7 +1,8 @@
 ---
 title: MCP Server
 sidebar_position: 1
-description: Using lazy-md as an MCP server for AI agents
+description: Use lazy-md as an MCP (Model Context Protocol) server for AI agents. 15 built-in tools for reading, navigating, and editing markdown documents via JSON-RPC 2.0 over stdio. Integrates with Claude Code and Gemini CLI.
+keywords: [MCP server, Model Context Protocol, AI agent markdown, Claude Code MCP, Gemini CLI MCP, JSON-RPC markdown, lazy-md MCP, stdio server]
 ---
 
 # MCP Server

@@ -1,7 +1,8 @@
 ---
 title: Panels & Layout
 sidebar_position: 5
-description: The 3-panel layout system
+description: "lazy-md's 3-panel TUI layout inspired by lazygit: file tree, editor, and live markdown preview. Toggle and resize panels with keyboard shortcuts."
+keywords: [three panel layout, tui layout, terminal ui, lazygit inspired, file tree panel, markdown preview panel]
 ---
 
 # Panels & Layout

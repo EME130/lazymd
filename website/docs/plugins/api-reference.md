@@ -1,7 +1,8 @@
 ---
-title: API Reference
+title: Plugin API Reference
 sidebar_position: 4
-description: Plugin API types and events
+description: lazy-md plugin API reference — EventType, PluginInfo, and CommandDef types. Hook into file open, save, buffer changes, mode changes, and cursor events.
+keywords: [lazy-md API, plugin API, event types, command definition, plugin info, zig API reference]
 ---
 
 # Plugin API Reference

@@ -1,7 +1,8 @@
 ---
 title: Developing Plugins
 sidebar_position: 3
-description: How to create custom plugins for lazy-md
+description: How to create custom plugins for lazy-md in Zig. Step-by-step guide with a Hello World example using the plugin vtable interface.
+keywords: [lazy-md plugin development, zig plugin, create plugin, plugin tutorial, vtable interface, editor plugin guide]
 ---
 
 # Developing Plugins

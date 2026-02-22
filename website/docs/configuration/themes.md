@@ -1,7 +1,8 @@
 ---
 title: Themes
 sidebar_position: 2
-description: Color themes in lazy-md
+description: 12 built-in color themes for lazy-md — Dracula, Gruvbox, Nord, Catppuccin, Tokyo Night, and more. Syntax highlighting colors for 16 languages with truecolor support.
+keywords: [terminal editor themes, dracula theme, gruvbox, nord, catppuccin, color themes, syntax highlighting colors, lazy-md themes]
 ---
 
 # Themes

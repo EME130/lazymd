@@ -1,7 +1,8 @@
 ---
 title: Mouse Support
 sidebar_position: 6
-description: Mouse input support in lazy-md
+description: Mouse support in lazy-md — click to position cursor, scroll with the mouse wheel, and click to switch panels. Works in iTerm2, Alacritty, kitty, and other modern terminals.
+keywords: [terminal mouse support, click cursor, scroll wheel terminal, SGR mouse mode, lazy-md mouse]
 ---
 
 # Mouse Support

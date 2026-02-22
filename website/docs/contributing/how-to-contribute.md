@@ -1,7 +1,8 @@
 ---
 title: How to Contribute
 sidebar_position: 1
-description: Contributing to lazy-md
+description: How to contribute to lazy-md — fork the repo, create a branch, make changes, run tests, format code, and submit a pull request.
+keywords: [contribute lazy-md, open source contribution, pull request, zig project contribution]
 ---
 
 # How to Contribute
