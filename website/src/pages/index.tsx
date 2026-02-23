@@ -123,7 +123,7 @@ function Install(): React.JSX.Element {
             <div className={s.installStep}>2</div>
             <h3>Build</h3>
             <div className={s.codeBlock}>
-              <code>{`git clone https://github.com/\nuser/lazy-md.git\ncd lazy-md && zig build`}</code>
+              <code>{`git clone https://github.com/\nEME130/lazymd.git\ncd lazy-md && zig build`}</code>
             </div>
           </div>
           <div className={s.installCard}>
@@ -259,7 +259,7 @@ function CTASection(): React.JSX.Element {
         <Link className={s.btnPrimary} to="/docs/getting-started/installation">
           Get Started
         </Link>
-        <Link className={s.btnSecondary} to="https://github.com/user/lazy-md">
+        <Link className={s.btnSecondary} to="https://github.com/EME130/lazymd">
           Star on GitHub
         </Link>
       </div>

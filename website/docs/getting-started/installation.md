@@ -14,7 +14,7 @@ lazy-md requires [Zig](https://ziglang.org/download/) version 0.15.1 or later.
 ## Build from source
 
 ```bash
-git clone https://github.com/user/lazy-md.git
+git clone https://github.com/EME130/lazymd.git
 cd lazy-md
 zig build
 ```
@@ -27,7 +27,7 @@ cp zig-out/bin/lazy-md /usr/local/bin/
 
 ## Pre-built binaries
 
-Download pre-built binaries from [GitHub Releases](https://github.com/user/lazy-md/releases). Available for:
+Download pre-built binaries from [GitHub Releases](https://github.com/EME130/lazymd/releases). Available for:
 
 - Linux x86_64
 - macOS x86_64
