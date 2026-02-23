@@ -1,83 +1,13 @@
 const std = @import("std");
 const Terminal = @import("Terminal.zig");
+const events = @import("frontend/events.zig");
 const Self = @This();
 
-// ── Key Types ─────────────────────────────────────────────────────────
-
-pub const Key = struct {
-    code: Code,
-    ctrl: bool = false,
-    alt: bool = false,
-
-    pub const Code = union(enum) {
-        char: u21,
-        // Navigation
-        up,
-        down,
-        left,
-        right,
-        home,
-        end,
-        page_up,
-        page_down,
-        // Editing
-        backspace,
-        delete,
-        tab,
-        enter,
-        escape,
-        // Function keys
-        f1,
-        f2,
-        f3,
-        f4,
-        f5,
-        f6,
-        f7,
-        f8,
-        f9,
-        f10,
-        f11,
-        f12,
-    };
-
-    pub fn char(c: u21) Key {
-        return .{ .code = .{ .char = c } };
-    }
-
-    pub fn ctrl_key(c: u21) Key {
-        return .{ .code = .{ .char = c }, .ctrl = true };
-    }
-
-    pub fn eql(a: Key, b: Key) bool {
-        return std.meta.eql(a.code, b.code) and a.ctrl == b.ctrl and a.alt == b.alt;
-    }
-};
-
-pub const MouseButton = enum {
-    left,
-    middle,
-    right,
-    scroll_up,
-    scroll_down,
-    release,
-};
-
-pub const Mouse = struct {
-    button: MouseButton,
-    x: u16, // 0-indexed column
-    y: u16, // 0-indexed row
-    ctrl: bool = false,
-    alt: bool = false,
-    shift: bool = false,
-};
-
-pub const Event = union(enum) {
-    key: Key,
-    mouse: Mouse,
-    resize: Terminal.Size,
-    none,
-};
+// Re-export shared types from events.zig
+pub const Key = events.Key;
+pub const MouseButton = events.MouseButton;
+pub const Mouse = events.Mouse;
+pub const Event = events.Event;
 
 // ── State ─────────────────────────────────────────────────────────────
 
@@ -97,7 +27,7 @@ pub fn init(term: *Terminal) Self {
 pub fn poll(self: *Self) !Event {
     // Check for resize
     if (self.term.updateSize()) {
-        return .{ .resize = .{ .rows = self.term.height, .cols = self.term.width } };
+        return .{ .resize = .{ .width = self.term.width, .height = self.term.height } };
     }
 
     const byte = self.nextByte() orelse return .none;

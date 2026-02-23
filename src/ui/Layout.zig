@@ -1,6 +1,5 @@
 const std = @import("std");
-const Renderer = @import("../Renderer.zig");
-const Terminal = @import("../Terminal.zig");
+const Surface = @import("../frontend/Surface.zig");
 const Editor = @import("../Editor.zig");
 const Preview = @import("Preview.zig");
 const BrainView = @import("BrainView.zig");
@@ -97,41 +96,41 @@ pub fn cyclePanel(self: *Self) void {
 
 // ── Rendering ─────────────────────────────────────────────────────────
 
-pub fn renderChrome(self: *Self, renderer: *Renderer) void {
+pub fn renderChrome(self: *Self, surface: *Surface) void {
     const tc = @import("../themes.zig").currentColors();
     // Title bar
-    renderer.fillRow(self.title_rect.y, ' ', tc.title_fg, tc.title_bg, .{});
+    surface.fillRow(self.title_rect.y, ' ', tc.title_fg, tc.title_bg, .{});
     const title = " lazy-md v0.1.0";
-    renderer.putStr(0, 0, title, tc.title_fg, tc.title_bg, .{ .bold = true });
+    surface.putStr(0, 0, title, tc.title_fg, tc.title_bg, .{ .bold = true });
 
     // Keyboard hints on title bar (right-aligned)
     const hints = "Tab:panels  1:tree  2:preview  3:brain  :q quit ";
     if (hints.len < self.width) {
-        renderer.putStr(self.width -| @as(u16, @intCast(hints.len)), 0, hints, tc.border_active, tc.title_bg, .{});
+        surface.putStr(self.width -| @as(u16, @intCast(hints.len)), 0, hints, tc.border_active, tc.title_bg, .{});
     }
 
     // Panel borders
     if (self.show_file_tree and self.tree_rect.w > 0) {
-        renderer.drawVLine(self.tree_rect.x + self.tree_rect.w -| 1, self.tree_rect.y, self.tree_rect.h, tc.border, .default);
+        surface.drawVLine(self.tree_rect.x + self.tree_rect.w -| 1, self.tree_rect.y, self.tree_rect.h, tc.border, .default);
     }
     if (self.show_brain and self.brain_rect.w > 0) {
-        renderer.drawVLine(self.brain_rect.x, self.brain_rect.y, self.brain_rect.h, tc.border, .default);
+        surface.drawVLine(self.brain_rect.x, self.brain_rect.y, self.brain_rect.h, tc.border, .default);
     } else if (self.show_preview and self.preview_rect.w > 0) {
-        renderer.drawVLine(self.preview_rect.x, self.preview_rect.y, self.preview_rect.h, tc.border, .default);
+        surface.drawVLine(self.preview_rect.x, self.preview_rect.y, self.preview_rect.h, tc.border, .default);
     }
 }
 
-pub fn renderFileTree(self: *Self, renderer: *Renderer, entries: []const FileEntry) void {
+pub fn renderFileTree(self: *Self, surface: *Surface, entries: []const FileEntry) void {
     if (!self.show_file_tree) return;
 
     const r = self.tree_rect;
     const tc = @import("../themes.zig").currentColors();
     const is_active = self.active_panel == .file_tree;
-    const border_fg: Terminal.Color = if (is_active) tc.border_active else tc.border;
+    const border_fg: Surface.Color = if (is_active) tc.border_active else tc.border;
 
     // Panel header
-    renderer.putStr(r.x + 1, r.y, " Files ", tc.title_fg, .default, .{ .bold = true });
-    renderer.drawVLine(r.x + r.w -| 1, r.y, r.h, border_fg, .default);
+    surface.putStr(r.x + 1, r.y, " Files ", tc.title_fg, .default, .{ .bold = true });
+    surface.drawVLine(r.x + r.w -| 1, r.y, r.h, border_fg, .default);
 
     // File entries
     const max_entries = if (r.h > 2) r.h - 1 else 0;
@@ -139,39 +138,39 @@ pub fn renderFileTree(self: *Self, renderer: *Renderer, entries: []const FileEnt
         if (i >= max_entries) break;
         const y = r.y + 1 + @as(u16, @intCast(i));
         const icon: []const u8 = if (entry.is_dir) "  " else "  ";
-        const fg: Terminal.Color = if (entry.is_dir) .bright_blue else if (entry.is_md) .bright_green else .white;
-        renderer.putStrTrunc(r.x + 1, y, icon, r.w -| 2, fg, .default, .{});
-        renderer.putStrTrunc(r.x + 3, y, entry.name, r.w -| 4, fg, .default, .{});
+        const fg: Surface.Color = if (entry.is_dir) .bright_blue else if (entry.is_md) .bright_green else .white;
+        surface.putStrTrunc(r.x + 1, y, icon, r.w -| 2, fg, .default, .{});
+        surface.putStrTrunc(r.x + 3, y, entry.name, r.w -| 4, fg, .default, .{});
     }
 }
 
-pub fn renderPreview(self: *Self, renderer: *Renderer, editor: *Editor, preview: *Preview) void {
+pub fn renderPreview(self: *Self, surface: *Surface, editor: *Editor, preview: *Preview) void {
     if (!self.show_preview) return;
 
     const r = self.preview_rect;
     const tc = @import("../themes.zig").currentColors();
     const is_active = self.active_panel == .preview;
-    const border_fg: Terminal.Color = if (is_active) tc.border_active else tc.border;
+    const border_fg: Surface.Color = if (is_active) tc.border_active else tc.border;
 
     // Panel border and header
-    renderer.drawVLine(r.x, r.y, r.h, border_fg, .default);
-    renderer.putStr(r.x + 1, r.y, " Preview ", tc.title_fg, .default, .{ .bold = true });
+    surface.drawVLine(r.x, r.y, r.h, border_fg, .default);
+    surface.putStr(r.x + 1, r.y, " Preview ", tc.title_fg, .default, .{ .bold = true });
 
     // Rendered markdown preview
-    preview.render(renderer, editor, r);
+    preview.render(surface, editor, r);
 }
 
-pub fn renderBrain(self: *Self, renderer: *Renderer, brain: *BrainView) void {
+pub fn renderBrain(self: *Self, surface: *Surface, brain: *BrainView) void {
     if (!self.show_brain) return;
 
     const r = self.brain_rect;
     const tc = @import("../themes.zig").currentColors();
     const is_active = self.active_panel == .brain;
-    const border_fg: Terminal.Color = if (is_active) tc.border_active else tc.border;
+    const border_fg: Surface.Color = if (is_active) tc.border_active else tc.border;
 
     // Panel border and header
-    renderer.drawVLine(r.x, r.y, r.h, border_fg, .default);
-    renderer.putStr(r.x + 1, r.y, " Brain ", tc.title_fg, .default, .{ .bold = true });
+    surface.drawVLine(r.x, r.y, r.h, border_fg, .default);
+    surface.putStr(r.x + 1, r.y, " Brain ", tc.title_fg, .default, .{ .bold = true });
 
     // Render graph inside panel (offset by 1 for border, 1 for header)
     const inner: Rect = .{
@@ -180,7 +179,7 @@ pub fn renderBrain(self: *Self, renderer: *Renderer, brain: *BrainView) void {
         .w = if (r.w > 2) r.w - 2 else 1,
         .h = if (r.h > 2) r.h - 2 else 1,
     };
-    brain.render(renderer, inner);
+    brain.render(surface, inner);
 }
 
 pub const FileEntry = struct {

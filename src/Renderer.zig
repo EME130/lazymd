@@ -1,154 +1,91 @@
 const std = @import("std");
 const Terminal = @import("Terminal.zig");
-const Cell = Terminal.Cell;
-const Color = Terminal.Color;
-const Style = Terminal.Style;
+const Surface = @import("frontend/Surface.zig");
+const Cell = Surface.Cell;
+const Color = Surface.Color;
+const Style = Surface.Style;
 const Self = @This();
 
 // ── State ─────────────────────────────────────────────────────────────
 
 term: *Terminal,
-allocator: std.mem.Allocator,
-front: []Cell, // currently displayed
-back: []Cell, // being drawn to
-width: u16,
-height: u16,
+surface: Surface,
 
 // ── Init / Deinit ─────────────────────────────────────────────────────
 
 pub fn init(allocator: std.mem.Allocator, term: *Terminal) !Self {
-    const size = @as(usize, term.width) * @as(usize, term.height);
-    const front = try allocator.alloc(Cell, size);
-    const back = try allocator.alloc(Cell, size);
-
-    @memset(front, Cell{});
-    @memset(back, Cell{});
-
     return .{
         .term = term,
-        .allocator = allocator,
-        .front = front,
-        .back = back,
-        .width = term.width,
-        .height = term.height,
+        .surface = try Surface.init(allocator, term.width, term.height),
     };
 }
 
 pub fn deinit(self: *Self) void {
-    self.allocator.free(self.front);
-    self.allocator.free(self.back);
+    self.surface.deinit();
 }
 
 // ── Resize ────────────────────────────────────────────────────────────
 
 pub fn resize(self: *Self) !void {
-    const w = self.term.width;
-    const h = self.term.height;
-    if (w == self.width and h == self.height) return;
-
-    const size = @as(usize, w) * @as(usize, h);
-    self.allocator.free(self.front);
-    self.allocator.free(self.back);
-    self.front = try self.allocator.alloc(Cell, size);
-    self.back = try self.allocator.alloc(Cell, size);
-    @memset(self.front, Cell{});
-    @memset(self.back, Cell{});
-    self.width = w;
-    self.height = h;
+    try self.surface.resize(self.term.width, self.term.height);
 }
 
-// ── Drawing API ───────────────────────────────────────────────────────
+// ── Drawing API (delegates to Surface) ────────────────────────────────
 
 pub fn clear(self: *Self) void {
-    @memset(self.back, Cell{});
+    self.surface.clear();
 }
 
 pub fn setCell(self: *Self, x: u16, y: u16, cell: Cell) void {
-    if (x >= self.width or y >= self.height) return;
-    self.back[@as(usize, y) * @as(usize, self.width) + @as(usize, x)] = cell;
+    self.surface.setCell(x, y, cell);
 }
 
 pub fn putChar(self: *Self, x: u16, y: u16, ch: u21, fg: Color, bg: Color, style: Style) void {
-    self.setCell(x, y, .{ .char = ch, .fg = fg, .bg = bg, .style = style });
+    self.surface.putChar(x, y, ch, fg, bg, style);
 }
 
 pub fn putStr(self: *Self, x: u16, y: u16, str: []const u8, fg: Color, bg: Color, style: Style) void {
-    var col = x;
-    var i: usize = 0;
-    while (i < str.len) {
-        if (col >= self.width) break;
-        const byte_len = std.unicode.utf8ByteSequenceLength(str[i]) catch {
-            i += 1;
-            continue;
-        };
-        if (i + byte_len > str.len) break;
-        const codepoint = std.unicode.utf8Decode(str[i .. i + byte_len]) catch {
-            i += byte_len;
-            continue;
-        };
-        self.putChar(col, y, codepoint, fg, bg, style);
-        col += 1;
-        i += byte_len;
-    }
+    self.surface.putStr(x, y, str, fg, bg, style);
 }
 
 pub fn putStrTrunc(self: *Self, x: u16, y: u16, str: []const u8, max_w: u16, fg: Color, bg: Color, style: Style) void {
-    var col: u16 = 0;
-    var i: usize = 0;
-    while (i < str.len and col < max_w) {
-        const byte_len = std.unicode.utf8ByteSequenceLength(str[i]) catch {
-            i += 1;
-            continue;
-        };
-        if (i + byte_len > str.len) break;
-        const codepoint = std.unicode.utf8Decode(str[i .. i + byte_len]) catch {
-            i += byte_len;
-            continue;
-        };
-        self.putChar(x + col, y, codepoint, fg, bg, style);
-        col += 1;
-        i += byte_len;
-    }
+    self.surface.putStrTrunc(x, y, str, max_w, fg, bg, style);
 }
 
 pub fn fillRow(self: *Self, y: u16, ch: u21, fg: Color, bg: Color, style: Style) void {
-    for (0..self.width) |x| {
-        self.putChar(@intCast(x), y, ch, fg, bg, style);
-    }
+    self.surface.fillRow(y, ch, fg, bg, style);
 }
 
 pub fn fillRect(self: *Self, x: u16, y: u16, w: u16, h: u16, ch: u21, fg: Color, bg: Color, style: Style) void {
-    for (0..h) |dy| {
-        for (0..w) |dx| {
-            self.putChar(x +| @as(u16, @intCast(dx)), y +| @as(u16, @intCast(dy)), ch, fg, bg, style);
-        }
-    }
+    self.surface.fillRect(x, y, w, h, ch, fg, bg, style);
 }
 
-// Box drawing
 pub fn drawBox(self: *Self, x: u16, y: u16, w: u16, h: u16, fg: Color, bg: Color) void {
-    if (w < 2 or h < 2) return;
-    // Corners
-    self.putChar(x, y, 0x250C, fg, bg, .{}); // ┌
-    self.putChar(x + w - 1, y, 0x2510, fg, bg, .{}); // ┐
-    self.putChar(x, y + h - 1, 0x2514, fg, bg, .{}); // └
-    self.putChar(x + w - 1, y + h - 1, 0x2518, fg, bg, .{}); // ┘
-    // Horizontal
-    for (1..@as(usize, w) - 1) |dx| {
-        self.putChar(x + @as(u16, @intCast(dx)), y, 0x2500, fg, bg, .{}); // ─
-        self.putChar(x + @as(u16, @intCast(dx)), y + h - 1, 0x2500, fg, bg, .{}); // ─
-    }
-    // Vertical
-    for (1..@as(usize, h) - 1) |dy| {
-        self.putChar(x, y + @as(u16, @intCast(dy)), 0x2502, fg, bg, .{}); // │
-        self.putChar(x + w - 1, y + @as(u16, @intCast(dy)), 0x2502, fg, bg, .{}); // │
-    }
+    self.surface.drawBox(x, y, w, h, fg, bg);
 }
 
 pub fn drawVLine(self: *Self, x: u16, y: u16, h: u16, fg: Color, bg: Color) void {
-    for (0..h) |dy| {
-        self.putChar(x, y +| @as(u16, @intCast(dy)), 0x2502, fg, bg, .{});
-    }
+    self.surface.drawVLine(x, y, h, fg, bg);
+}
+
+pub fn forceRedraw(self: *Self) void {
+    self.surface.forceRedraw();
+}
+
+// ── Accessors ─────────────────────────────────────────────────────────
+
+pub fn getSurface(self: *Self) *Surface {
+    return &self.surface;
+}
+
+/// Access width through surface (for backward compatibility, use surface.width)
+pub inline fn getWidth(self: *const Self) u16 {
+    return self.surface.width;
+}
+
+/// Access height through surface (for backward compatibility, use surface.height)
+pub inline fn getHeight(self: *const Self) u16 {
+    return self.surface.height;
 }
 
 // ── Flush (Diff Render) ───────────────────────────────────────────────
@@ -162,11 +99,11 @@ pub fn flush(self: *Self) !void {
     var last_row: u16 = 0xFFFF;
     var last_col: u16 = 0xFFFF;
 
-    for (0..self.height) |y| {
-        for (0..self.width) |x| {
-            const idx = y * @as(usize, self.width) + x;
-            const back_cell = self.back[idx];
-            const front_cell = self.front[idx];
+    for (0..self.surface.height) |y| {
+        for (0..self.surface.width) |x| {
+            const idx = y * @as(usize, self.surface.width) + x;
+            const back_cell = self.surface.back[idx];
+            const front_cell = self.surface.front[idx];
 
             if (back_cell.eql(front_cell)) continue;
 
@@ -202,14 +139,9 @@ pub fn flush(self: *Self) !void {
     try self.term.resetStyle();
 
     // Swap buffers
-    @memcpy(self.front, self.back);
+    @memcpy(self.surface.front, self.surface.back);
 
     try self.term.flush();
-}
-
-pub fn forceRedraw(self: *Self) void {
-    // Invalidate front buffer to force full redraw on next flush
-    @memset(self.front, Cell{ .char = 0xFFFD });
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────

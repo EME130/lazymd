@@ -4,6 +4,9 @@ const Input = @import("Input.zig");
 const Buffer = @import("Buffer.zig");
 const Editor = @import("Editor.zig");
 const Renderer = @import("Renderer.zig");
+const Surface = @import("frontend/Surface.zig");
+const Frontend = @import("frontend/Frontend.zig");
+const TuiFrontend = @import("frontend/TuiFrontend.zig");
 const Layout = @import("ui/Layout.zig");
 const Preview = @import("ui/Preview.zig");
 const BrainView = @import("ui/BrainView.zig");
@@ -11,6 +14,8 @@ const Scanner = @import("brain/Scanner.zig");
 const Graph = @import("brain/Graph.zig");
 const plugin = @import("plugin.zig");
 const McpServer = @import("mcp/Server.zig");
+const AgentPlugin = @import("agent/AgentPlugin.zig");
+const WebServer = @import("web/WebServer.zig");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -23,9 +28,20 @@ pub fn main() !void {
 
     var file_path: ?[]const u8 = null;
     var mcp_mode = false;
-    for (args[1..]) |arg| {
+    var agent_mode = false;
+    var web_mode = false;
+    var web_port: u16 = 8080;
+    for (args[1..], 0..) |arg, i| {
         if (std.mem.eql(u8, arg, "--mcp-server") or std.mem.eql(u8, arg, "--mcp")) {
             mcp_mode = true;
+        } else if (std.mem.eql(u8, arg, "--agent")) {
+            agent_mode = true;
+        } else if (std.mem.eql(u8, arg, "--web-server")) {
+            web_mode = true;
+        } else if (std.mem.eql(u8, arg, "--port")) {
+            if (i + 1 < args[1..].len) {
+                web_port = std.fmt.parseInt(u16, args[i + 2], 10) catch 8080;
+            }
         } else {
             file_path = arg;
         }
@@ -46,6 +62,24 @@ pub fn main() !void {
         }
 
         try server.run();
+        return;
+    }
+
+    // Web server mode: HTTP + WebSocket
+    if (web_mode) {
+        var buffer = try Buffer.init(allocator);
+        defer buffer.deinit();
+        var web_server = WebServer.init(allocator, &buffer, web_port);
+        defer web_server.deinit();
+
+        if (file_path) |path| {
+            buffer.loadFile(path) catch {};
+            const owned = try allocator.dupe(u8, path);
+            web_server.file_path_owned = owned;
+            web_server.file_path = owned;
+        }
+
+        try web_server.run();
         return;
     }
 
@@ -71,6 +105,13 @@ pub fn main() !void {
 
     // Wire plugin system into editor
     editor.plugin_mgr = &plugin_mgr;
+
+    // Agent plugin
+    var agent_plugin = AgentPlugin.init(allocator);
+    defer agent_plugin.deinit();
+    if (agent_mode) {
+        try plugin_mgr.register(agent_plugin.asPlugin(), &editor);
+    }
 
     // Open file if provided
     if (file_path) |path| {
@@ -123,18 +164,22 @@ pub fn main() !void {
 
         // Draw
         renderer.clear();
-        layout.renderChrome(&renderer);
-        layout.renderFileTree(&renderer, file_entries.items);
-        try editor.render(&renderer);
-        editor.renderStatusBar(&renderer, layout.status_rect.y);
-        editor.renderCommandBar(&renderer, layout.cmd_rect.y);
+        const surface = renderer.getSurface();
+        layout.renderChrome(surface);
+        layout.renderFileTree(surface, file_entries.items);
+        try editor.render(surface);
+        editor.renderStatusBar(surface, layout.status_rect.y);
+        editor.renderCommandBar(surface, layout.cmd_rect.y);
         if (layout.show_brain) {
-            layout.renderBrain(&renderer, &brain_view);
+            layout.renderBrain(surface, &brain_view);
         } else {
-            layout.renderPreview(&renderer, &editor, &preview);
+            layout.renderPreview(surface, &editor, &preview);
         }
 
         try renderer.flush();
+
+        // Tick agent plugin (process incoming commands)
+        if (agent_mode) agent_plugin.tick();
 
         // Handle input
         const event = try input.poll();
@@ -372,4 +417,14 @@ test {
     _ = @import("highlight/Highlighter.zig");
     _ = @import("highlight/BuiltinHighlighter.zig");
     _ = @import("highlight/languages.zig");
+    _ = @import("frontend/events.zig");
+    _ = @import("frontend/Surface.zig");
+    _ = @import("frontend/Frontend.zig");
+    _ = @import("frontend/TuiFrontend.zig");
+    _ = @import("agent/AgentBackend.zig");
+    _ = @import("agent/AgentPlugin.zig");
+    _ = @import("agent/McpBackend.zig");
+    _ = @import("agent/WebSocketBackend.zig");
+    _ = @import("web/WebSocket.zig");
+    _ = @import("web/WebServer.zig");
 }

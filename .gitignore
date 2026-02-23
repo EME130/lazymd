@@ -4,5 +4,12 @@ zig-cache/
 .zig-cache/
 .scrach
 
+# Editor (web UI) build artifacts
+editor/node_modules/
+editor/build/
+editor/.vite/
+
 # Local Claude config
 .claude.local.md
+.vercel
+.env*.local

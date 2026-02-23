@@ -1,6 +1,5 @@
 const std = @import("std");
-const Renderer = @import("../Renderer.zig");
-const Terminal = @import("../Terminal.zig");
+const Surface = @import("../frontend/Surface.zig");
 const Editor = @import("../Editor.zig");
 const syntax = @import("../markdown/syntax.zig");
 const Layout = @import("Layout.zig");
@@ -190,7 +189,7 @@ fn collapseAtCursor(self: *Self) void {
 
 // ── Render ────────────────────────────────────────────────────────────
 
-pub fn render(self: *Self, renderer: *Renderer, editor: *Editor, rect: Layout.Rect) void {
+pub fn render(self: *Self, surface: *Surface, editor: *Editor, rect: Layout.Rect) void {
     // Invalidation check
     if (editor.buffer.lineCount() != self.last_line_count) {
         self.folds_dirty = true;
@@ -261,22 +260,22 @@ pub fn render(self: *Self, renderer: *Renderer, editor: *Editor, rect: Layout.Re
             const entry = self.fold_entries.items[fi];
             const indicator: u21 = if (entry.collapsed) 0x25B6 else 0x25BC; // ▶ or ▼
             const is_selected = if (self.preview_cursor) |c| c == fi else false;
-            const ind_fg: Terminal.Color = if (is_selected) .bright_white else .bright_black;
-            const ind_bg: Terminal.Color = if (is_selected) .{ .fixed = 238 } else .default;
-            renderer.putChar(rect.x + 1, y, indicator, ind_fg, ind_bg, .{});
+            const ind_fg: Surface.Color = if (is_selected) .bright_white else .bright_black;
+            const ind_bg: Surface.Color = if (is_selected) .{ .fixed = 238 } else .default;
+            surface.putChar(rect.x + 1, y, indicator, ind_fg, ind_bg, .{});
             if (is_selected) {
                 // Highlight the full line for selected heading
-                renderer.fillRect(content_x, y, content_w, 1, ' ', .default, .{ .fixed = 236 }, .{});
+                surface.fillRect(content_x, y, content_w, 1, ' ', .default, .{ .fixed = 236 }, .{});
             }
         }
 
-        const rows_used = self.renderLine(renderer, line, content_x, y, content_w, rect.h -| 1 -| screen_row);
+        const rows_used = self.renderLine(surface, line, content_x, y, content_w, rect.h -| 1 -| screen_row);
         screen_row += rows_used;
         buf_row += 1;
     }
 }
 
-fn renderLine(self: *Self, renderer: *Renderer, line: []const u8, x: u16, y: u16, w: u16, max_rows: u16) u16 {
+fn renderLine(self: *Self, surface: *Surface, line: []const u8, x: u16, y: u16, w: u16, max_rows: u16) u16 {
     if (max_rows == 0) return 0;
 
     const trimmed = std.mem.trimLeft(u8, line, " \t");
@@ -290,24 +289,24 @@ fn renderLine(self: *Self, renderer: *Renderer, line: []const u8, x: u16, y: u16
             self.code_lang = fence_info.language;
             self.hl_state = .{};
             // Opening fence: draw top border
-            fillHLine(renderer, x, y, w, 0x2500, .bright_black, .{ .fixed = 235 }); // ─
-            renderer.putChar(x, y, 0x250C, .bright_black, .{ .fixed = 235 }, .{}); // ┌
-            if (x + w > 0) renderer.putChar(x + w -| 1, y, 0x2510, .bright_black, .{ .fixed = 235 }, .{}); // ┐
+            fillHLine(surface, x, y, w, 0x2500, .bright_black, .{ .fixed = 235 }); // ─
+            surface.putChar(x, y, 0x250C, .bright_black, .{ .fixed = 235 }, .{}); // ┌
+            if (x + w > 0) surface.putChar(x + w -| 1, y, 0x2510, .bright_black, .{ .fixed = 235 }, .{}); // ┐
             // Show language label on top border
             if (self.code_lang) |lang_name| {
                 const label_x = x + 2;
                 const max_label_w = w -| 4;
                 if (max_label_w > 0) {
-                    _ = putStrClipped(renderer, label_x, y, lang_name, max_label_w, .bright_black, .{ .fixed = 235 }, .{ .dim = true });
+                    _ = putStrClipped(surface, label_x, y, lang_name, max_label_w, .bright_black, .{ .fixed = 235 }, .{ .dim = true });
                 }
             }
             return 1;
         } else {
             self.code_lang = null;
             // Closing fence: draw bottom border
-            fillHLine(renderer, x, y, w, 0x2500, .bright_black, .{ .fixed = 235 }); // ─
-            renderer.putChar(x, y, 0x2514, .bright_black, .{ .fixed = 235 }, .{}); // └
-            if (x + w > 0) renderer.putChar(x + w -| 1, y, 0x2518, .bright_black, .{ .fixed = 235 }, .{}); // ┘
+            fillHLine(surface, x, y, w, 0x2500, .bright_black, .{ .fixed = 235 }); // ─
+            surface.putChar(x, y, 0x2514, .bright_black, .{ .fixed = 235 }, .{}); // └
+            if (x + w > 0) surface.putChar(x + w -| 1, y, 0x2518, .bright_black, .{ .fixed = 235 }, .{}); // ┘
             return 1;
         }
     }
@@ -316,15 +315,15 @@ fn renderLine(self: *Self, renderer: *Renderer, line: []const u8, x: u16, y: u16
     if (self.line_ctx.in_code_block) {
         const tc = themes.currentColors();
         const bg = tc.code_block_bg;
-        renderer.putChar(x, y, 0x2502, .bright_black, .{ .fixed = 235 }, .{}); // │
-        if (x + w > 0) renderer.putChar(x + w -| 1, y, 0x2502, .bright_black, .{ .fixed = 235 }, .{}); // │
-        renderer.fillRect(x + 1, y, w -| 2, 1, ' ', .default, bg, .{});
+        surface.putChar(x, y, 0x2502, .bright_black, .{ .fixed = 235 }, .{}); // │
+        if (x + w > 0) surface.putChar(x + w -| 1, y, 0x2502, .bright_black, .{ .fixed = 235 }, .{}); // │
+        surface.fillRect(x + 1, y, w -| 2, 1, ' ', .default, bg, .{});
 
         if (self.code_lang) |lang_name| {
             // Syntax-highlighted rendering
             self.getHighlighter().highlightLine(self.allocator, line, lang_name, &self.hl_state, &self.hl_spans) catch {
                 // Fallback to monochrome on error
-                _ = putStrClipped(renderer, x + 1, y, line, w -| 2, tc.syn_normal, bg, .{});
+                _ = putStrClipped(surface, x + 1, y, line, w -| 2, tc.syn_normal, bg, .{});
                 return 1;
             };
             var col: u16 = 0;
@@ -332,12 +331,12 @@ fn renderLine(self: *Self, renderer: *Renderer, line: []const u8, x: u16, y: u16
                 if (col >= w -| 2) break;
                 const text = line[span.start..span.end];
                 const fg = tc.syntaxColor(span.kind);
-                const style: Terminal.Style = if (span.kind == .comment) .{ .italic = true } else .{};
-                col += putStrClipped(renderer, x + 1 + col, y, text, w -| 2 -| col, fg, bg, style);
+                const style: Surface.Style = if (span.kind == .comment) .{ .italic = true } else .{};
+                col += putStrClipped(surface, x + 1 + col, y, text, w -| 2 -| col, fg, bg, style);
             }
         } else {
             // No language — monochrome fallback
-            _ = putStrClipped(renderer, x + 1, y, line, w -| 2, .yellow, bg, .{});
+            _ = putStrClipped(surface, x + 1, y, line, w -| 2, .yellow, bg, .{});
         }
         return 1;
     }
@@ -347,20 +346,20 @@ fn renderLine(self: *Self, renderer: *Renderer, line: []const u8, x: u16, y: u16
 
     // Horizontal rule
     if (syntax.isHorizontalRule(trimmed)) {
-        fillHLine(renderer, x, y, w, 0x2500, .bright_black, .default); // ─
+        fillHLine(surface, x, y, w, 0x2500, .bright_black, .default); // ─
         return 1;
     }
 
     // Header — box-style rendering
     if (parseHeader(trimmed)) |result| {
-        return self.renderHeading(renderer, result.text, result.level, x, y, w, max_rows);
+        return self.renderHeading(surface, result.text, result.level, x, y, w, max_rows);
     }
 
     // Blockquote
     if (trimmed.len > 0 and trimmed[0] == '>') {
-        renderer.putChar(x, y, 0x2502, .bright_cyan, .default, .{ .bold = true }); // │
+        surface.putChar(x, y, 0x2502, .bright_cyan, .default, .{ .bold = true }); // │
         const quote_text = if (trimmed.len > 1 and trimmed[1] == ' ') trimmed[2..] else trimmed[1..];
-        _ = self.renderInline(renderer, quote_text, x + 2, y, w -| 2, .bright_black, .{ .italic = true });
+        _ = self.renderInline(surface, quote_text, x + 2, y, w -| 2, .bright_black, .{ .italic = true });
         return 1;
     }
 
@@ -374,16 +373,16 @@ fn renderLine(self: *Self, renderer: *Renderer, line: []const u8, x: u16, y: u16
         if (item_text.len >= 3 and item_text[0] == '[' and item_text[2] == ']') {
             const is_checked = item_text[1] == 'x' or item_text[1] == 'X';
             const checkbox: u21 = if (is_checked) 0x2611 else 0x2610; // ☑ or ☐
-            const checkbox_fg: Terminal.Color = if (is_checked) .bright_green else .bright_yellow;
-            renderer.putChar(x + bullet_indent, y, checkbox, checkbox_fg, .default, .{ .bold = true });
+            const checkbox_fg: Surface.Color = if (is_checked) .bright_green else .bright_yellow;
+            surface.putChar(x + bullet_indent, y, checkbox, checkbox_fg, .default, .{ .bold = true });
             const task_text = if (item_text.len > 3) item_text[3..] else "";
             const task_text_trimmed = std.mem.trimLeft(u8, task_text, " ");
-            const task_style: Terminal.Style = if (is_checked) .{ .strikethrough = true, .dim = true } else .{};
-            const task_fg: Terminal.Color = if (is_checked) .bright_black else .default;
-            _ = self.renderInline(renderer, task_text_trimmed, x + bullet_indent + 2, y, w -| bullet_indent -| 2, task_fg, task_style);
+            const task_style: Surface.Style = if (is_checked) .{ .strikethrough = true, .dim = true } else .{};
+            const task_fg: Surface.Color = if (is_checked) .bright_black else .default;
+            _ = self.renderInline(surface, task_text_trimmed, x + bullet_indent + 2, y, w -| bullet_indent -| 2, task_fg, task_style);
         } else {
-            renderer.putChar(x + bullet_indent, y, 0x2022, .bright_magenta, .default, .{ .bold = true }); // •
-            _ = self.renderInline(renderer, item_text, x + bullet_indent + 2, y, w -| bullet_indent -| 2, .default, .{});
+            surface.putChar(x + bullet_indent, y, 0x2022, .bright_magenta, .default, .{ .bold = true }); // •
+            _ = self.renderInline(surface, item_text, x + bullet_indent + 2, y, w -| bullet_indent -| 2, .default, .{});
         }
         return 1;
     }
@@ -393,22 +392,22 @@ fn renderLine(self: *Self, renderer: *Renderer, line: []const u8, x: u16, y: u16
         const indent = line.len - trimmed.len;
         const bullet_indent: u16 = @intCast(@min(indent, w));
         const prefix_len = numberedListPrefixLen(trimmed);
-        _ = putStrClipped(renderer, x + bullet_indent, y, trimmed[0..prefix_len], w -| bullet_indent, .bright_magenta, .default, .{ .bold = true });
+        _ = putStrClipped(surface, x + bullet_indent, y, trimmed[0..prefix_len], w -| bullet_indent, .bright_magenta, .default, .{ .bold = true });
         const item_text = trimmed[prefix_len..];
-        _ = self.renderInline(renderer, item_text, x + bullet_indent + @as(u16, @intCast(prefix_len)), y, w -| bullet_indent -| @as(u16, @intCast(prefix_len)), .default, .{});
+        _ = self.renderInline(surface, item_text, x + bullet_indent + @as(u16, @intCast(prefix_len)), y, w -| bullet_indent -| @as(u16, @intCast(prefix_len)), .default, .{});
         return 1;
     }
 
     // Normal paragraph
-    _ = self.renderInline(renderer, line, x, y, w, .default, .{});
+    _ = self.renderInline(surface, line, x, y, w, .default, .{});
     return 1;
 }
 
 // ── Box-Style Heading Rendering ───────────────────────────────────────
 
-fn renderHeading(self: *Self, renderer: *Renderer, text: []const u8, level: u8, x: u16, y: u16, w: u16, max_rows: u16) u16 {
+fn renderHeading(self: *Self, surface: *Surface, text: []const u8, level: u8, x: u16, y: u16, w: u16, max_rows: u16) u16 {
     const tc = themes.currentColors();
-    const fg: Terminal.Color = switch (level) {
+    const fg: Surface.Color = switch (level) {
         1 => tc.h1,
         2 => tc.h2,
         3 => tc.h3,
@@ -420,7 +419,7 @@ fn renderHeading(self: *Self, renderer: *Renderer, text: []const u8, level: u8, 
 
     // Fallback: too narrow for any box drawing
     if (w < 6) {
-        _ = self.renderInline(renderer, text, x, y, w, fg, .{ .bold = true });
+        _ = self.renderInline(surface, text, x, y, w, fg, .{ .bold = true });
         return 1;
     }
 
@@ -431,22 +430,22 @@ fn renderHeading(self: *Self, renderer: *Renderer, text: []const u8, level: u8, 
         1 => {
             if (max_rows < 3) {
                 // Fallback to H3 inline-rule style
-                return renderInlineRule(self, renderer, text, x, y, w, fg);
+                return renderInlineRule(self, surface, text, x, y, w, fg);
             }
-            const bg: Terminal.Color = .{ .fixed = 236 };
+            const bg: Surface.Color = .{ .fixed = 236 };
             // Top border
-            renderer.putChar(x, y, 0x2554, fg, .default, .{}); // ╔
-            fillHLine(renderer, x + 1, y, w -| 2, 0x2550, fg, .default); // ═
-            renderer.putChar(x + w -| 1, y, 0x2557, fg, .default, .{}); // ╗
+            surface.putChar(x, y, 0x2554, fg, .default, .{}); // ╔
+            fillHLine(surface, x + 1, y, w -| 2, 0x2550, fg, .default); // ═
+            surface.putChar(x + w -| 1, y, 0x2557, fg, .default, .{}); // ╗
             // Middle row with text
-            renderer.putChar(x, y + 1, 0x2551, fg, .default, .{}); // ║
-            renderer.fillRect(x + 1, y + 1, w -| 2, 1, ' ', fg, bg, .{});
-            renderer.putChar(x + w -| 1, y + 1, 0x2551, fg, .default, .{}); // ║
-            _ = self.renderInline(renderer, text, x + 2, y + 1, w -| 4, fg, .{ .bold = true });
+            surface.putChar(x, y + 1, 0x2551, fg, .default, .{}); // ║
+            surface.fillRect(x + 1, y + 1, w -| 2, 1, ' ', fg, bg, .{});
+            surface.putChar(x + w -| 1, y + 1, 0x2551, fg, .default, .{}); // ║
+            _ = self.renderInline(surface, text, x + 2, y + 1, w -| 4, fg, .{ .bold = true });
             // Bottom border
-            renderer.putChar(x, y + 2, 0x255A, fg, .default, .{}); // ╚
-            fillHLine(renderer, x + 1, y + 2, w -| 2, 0x2550, fg, .default); // ═
-            renderer.putChar(x + w -| 1, y + 2, 0x255D, fg, .default, .{}); // ╝
+            surface.putChar(x, y + 2, 0x255A, fg, .default, .{}); // ╚
+            fillHLine(surface, x + 1, y + 2, w -| 2, 0x2550, fg, .default); // ═
+            surface.putChar(x + w -| 1, y + 2, 0x255D, fg, .default, .{}); // ╝
             return 3;
         },
         // H2: Single-line box ┌───────────────┐
@@ -454,64 +453,64 @@ fn renderHeading(self: *Self, renderer: *Renderer, text: []const u8, level: u8, 
         //                     └───────────────┘
         2 => {
             if (max_rows < 3) {
-                return renderInlineRule(self, renderer, text, x, y, w, fg);
+                return renderInlineRule(self, surface, text, x, y, w, fg);
             }
-            const bg: Terminal.Color = .{ .fixed = 235 };
+            const bg: Surface.Color = .{ .fixed = 235 };
             // Top border
-            renderer.putChar(x, y, 0x250C, fg, .default, .{}); // ┌
-            fillHLine(renderer, x + 1, y, w -| 2, 0x2500, fg, .default); // ─
-            renderer.putChar(x + w -| 1, y, 0x2510, fg, .default, .{}); // ┐
+            surface.putChar(x, y, 0x250C, fg, .default, .{}); // ┌
+            fillHLine(surface, x + 1, y, w -| 2, 0x2500, fg, .default); // ─
+            surface.putChar(x + w -| 1, y, 0x2510, fg, .default, .{}); // ┐
             // Middle row with text
-            renderer.putChar(x, y + 1, 0x2502, fg, .default, .{}); // │
-            renderer.fillRect(x + 1, y + 1, w -| 2, 1, ' ', fg, bg, .{});
-            renderer.putChar(x + w -| 1, y + 1, 0x2502, fg, .default, .{}); // │
-            _ = self.renderInline(renderer, text, x + 2, y + 1, w -| 4, fg, .{ .bold = true });
+            surface.putChar(x, y + 1, 0x2502, fg, .default, .{}); // │
+            surface.fillRect(x + 1, y + 1, w -| 2, 1, ' ', fg, bg, .{});
+            surface.putChar(x + w -| 1, y + 1, 0x2502, fg, .default, .{}); // │
+            _ = self.renderInline(surface, text, x + 2, y + 1, w -| 4, fg, .{ .bold = true });
             // Bottom border
-            renderer.putChar(x, y + 2, 0x2514, fg, .default, .{}); // └
-            fillHLine(renderer, x + 1, y + 2, w -| 2, 0x2500, fg, .default); // ─
-            renderer.putChar(x + w -| 1, y + 2, 0x2518, fg, .default, .{}); // ┘
+            surface.putChar(x, y + 2, 0x2514, fg, .default, .{}); // └
+            fillHLine(surface, x + 1, y + 2, w -| 2, 0x2500, fg, .default); // ─
+            surface.putChar(x + w -| 1, y + 2, 0x2518, fg, .default, .{}); // ┘
             return 3;
         },
         // H3: Inline ruled line ── Text ────
-        3 => return renderInlineRule(self, renderer, text, x, y, w, fg),
+        3 => return renderInlineRule(self, surface, text, x, y, w, fg),
         // H4: Filled triangle ▸ Text
         4 => {
-            renderer.putChar(x, y, 0x25B8, fg, .default, .{ .bold = true }); // ▸
-            _ = self.renderInline(renderer, text, x + 2, y, w -| 2, fg, .{ .bold = true });
+            surface.putChar(x, y, 0x25B8, fg, .default, .{ .bold = true }); // ▸
+            _ = self.renderInline(surface, text, x + 2, y, w -| 2, fg, .{ .bold = true });
             return 1;
         },
         // H5: Open triangle ▹ Text
         5 => {
-            renderer.putChar(x, y, 0x25B9, fg, .default, .{}); // ▹
-            _ = self.renderInline(renderer, text, x + 2, y, w -| 2, fg, .{ .bold = true });
+            surface.putChar(x, y, 0x25B9, fg, .default, .{}); // ▹
+            _ = self.renderInline(surface, text, x + 2, y, w -| 2, fg, .{ .bold = true });
             return 1;
         },
         // H6: Middle dot · Text
         else => {
-            renderer.putChar(x, y, 0x00B7, fg, .default, .{}); // ·
-            _ = self.renderInline(renderer, text, x + 2, y, w -| 2, fg, .{});
+            surface.putChar(x, y, 0x00B7, fg, .default, .{}); // ·
+            _ = self.renderInline(surface, text, x + 2, y, w -| 2, fg, .{});
             return 1;
         },
     }
 }
 
-fn renderInlineRule(self: *Self, renderer: *Renderer, text: []const u8, x: u16, y: u16, w: u16, fg: Terminal.Color) u16 {
+fn renderInlineRule(self: *Self, surface: *Surface, text: []const u8, x: u16, y: u16, w: u16, fg: Surface.Color) u16 {
     // ── Text ────
     const prefix_len: u16 = 3; // "── " (2 dashes + space)
-    fillHLine(renderer, x, y, @min(2, w), 0x2500, fg, .default); // ──
+    fillHLine(surface, x, y, @min(2, w), 0x2500, fg, .default); // ──
     const text_x = x + prefix_len;
     const text_w = w -| prefix_len -| 1;
-    const written = self.renderInline(renderer, text, text_x, y, text_w, fg, .{ .bold = true });
+    const written = self.renderInline(surface, text, text_x, y, text_w, fg, .{ .bold = true });
     // Fill remaining with rule
     const trail_start = text_x + written + 1;
     const trail_end = x + w;
     if (trail_start < trail_end) {
-        fillHLine(renderer, trail_start, y, trail_end - trail_start, 0x2500, fg, .default);
+        fillHLine(surface, trail_start, y, trail_end - trail_start, 0x2500, fg, .default);
     }
     return 1;
 }
 
-fn renderInline(self: *Self, renderer: *Renderer, text: []const u8, x: u16, y: u16, w: u16, base_fg: Terminal.Color, base_style: Terminal.Style) u16 {
+fn renderInline(self: *Self, surface: *Surface, text: []const u8, x: u16, y: u16, w: u16, base_fg: Surface.Color, base_style: Surface.Style) u16 {
     var col: u16 = 0;
     var i: usize = 0;
 
@@ -523,7 +522,7 @@ fn renderInline(self: *Self, renderer: *Renderer, text: []const u8, x: u16, y: u
             const marker = text[i];
             if (findClosing3(text, i + 3, marker)) |end| {
                 const inner = text[i + 3 .. end];
-                col += putStrClipped(renderer, x + col, y, inner, w -| col, if (base_fg == .default) .bright_white else base_fg, .default, mergeStyle(base_style, .{ .bold = true, .italic = true }));
+                col += putStrClipped(surface, x + col, y, inner, w -| col, if (base_fg == .default) .bright_white else base_fg, .default, mergeStyle(base_style, .{ .bold = true, .italic = true }));
                 i = end + 3;
                 continue;
             }
@@ -536,7 +535,7 @@ fn renderInline(self: *Self, renderer: *Renderer, text: []const u8, x: u16, y: u
             const marker = text[i];
             if (findClosing2(text, i + 2, marker)) |end| {
                 const inner = text[i + 2 .. end];
-                col += putStrClipped(renderer, x + col, y, inner, w -| col, if (base_fg == .default) .bright_white else base_fg, .default, mergeStyle(base_style, .{ .bold = true }));
+                col += putStrClipped(surface, x + col, y, inner, w -| col, if (base_fg == .default) .bright_white else base_fg, .default, mergeStyle(base_style, .{ .bold = true }));
                 i = end + 2;
                 continue;
             }
@@ -548,7 +547,7 @@ fn renderInline(self: *Self, renderer: *Renderer, text: []const u8, x: u16, y: u
             if (findClosing1(text, i + 1, marker)) |end| {
                 if (end > i + 1) {
                     const inner = text[i + 1 .. end];
-                    col += putStrClipped(renderer, x + col, y, inner, w -| col, if (base_fg == .default) .white else base_fg, .default, mergeStyle(base_style, .{ .italic = true }));
+                    col += putStrClipped(surface, x + col, y, inner, w -| col, if (base_fg == .default) .white else base_fg, .default, mergeStyle(base_style, .{ .italic = true }));
                     i = end + 1;
                     continue;
                 }
@@ -559,7 +558,7 @@ fn renderInline(self: *Self, renderer: *Renderer, text: []const u8, x: u16, y: u
         if (i + 1 < text.len and text[i] == '~' and text[i + 1] == '~') {
             if (findClosingStr(text, i + 2, "~~")) |end| {
                 const inner = text[i + 2 .. end];
-                col += putStrClipped(renderer, x + col, y, inner, w -| col, .bright_black, .default, mergeStyle(base_style, .{ .strikethrough = true }));
+                col += putStrClipped(surface, x + col, y, inner, w -| col, .bright_black, .default, mergeStyle(base_style, .{ .strikethrough = true }));
                 i = end + 2;
                 continue;
             }
@@ -569,7 +568,7 @@ fn renderInline(self: *Self, renderer: *Renderer, text: []const u8, x: u16, y: u
         if (text[i] == '`') {
             if (findClosing1(text, i + 1, '`')) |end| {
                 const inner = text[i + 1 .. end];
-                col += putStrClipped(renderer, x + col, y, inner, w -| col, .yellow, .{ .fixed = 236 }, base_style);
+                col += putStrClipped(surface, x + col, y, inner, w -| col, .yellow, .{ .fixed = 236 }, base_style);
                 i = end + 1;
                 continue;
             }
@@ -579,9 +578,9 @@ fn renderInline(self: *Self, renderer: *Renderer, text: []const u8, x: u16, y: u
         if (text[i] == '!' and i + 1 < text.len and text[i + 1] == '[') {
             if (parseLink(text, i + 1)) |link| {
                 const alt_text = text[i + 2 .. link.text_end];
-                col += putStrClipped(renderer, x + col, y, "[", w -| col, .bright_magenta, .default, .{ .dim = true });
-                col += putStrClipped(renderer, x + col, y, alt_text, w -| col, .bright_magenta, .default, base_style);
-                col += putStrClipped(renderer, x + col, y, "]", w -| col, .bright_magenta, .default, .{ .dim = true });
+                col += putStrClipped(surface, x + col, y, "[", w -| col, .bright_magenta, .default, .{ .dim = true });
+                col += putStrClipped(surface, x + col, y, alt_text, w -| col, .bright_magenta, .default, base_style);
+                col += putStrClipped(surface, x + col, y, "]", w -| col, .bright_magenta, .default, .{ .dim = true });
                 i = link.url_end + 1; // +1 for the leading '!'
                 continue;
             }
@@ -591,7 +590,7 @@ fn renderInline(self: *Self, renderer: *Renderer, text: []const u8, x: u16, y: u
         if (text[i] == '[') {
             if (parseLink(text, i)) |link| {
                 const link_text = text[i + 1 .. link.text_end];
-                col += putStrClipped(renderer, x + col, y, link_text, w -| col, .bright_blue, .default, mergeStyle(base_style, .{ .underline = true }));
+                col += putStrClipped(surface, x + col, y, link_text, w -| col, .bright_blue, .default, mergeStyle(base_style, .{ .underline = true }));
                 i = link.url_end;
                 continue;
             }
@@ -609,7 +608,7 @@ fn renderInline(self: *Self, renderer: *Renderer, text: []const u8, x: u16, y: u
                 continue;
             };
             const fg = if (base_fg == .default) .default else base_fg;
-            renderer.putChar(x + col, y, codepoint, fg, .default, base_style);
+            surface.putChar(x + col, y, codepoint, fg, .default, base_style);
             col += 1;
             i += byte_len;
         }
@@ -709,7 +708,7 @@ fn parseLink(text: []const u8, start: usize) ?LinkInfo {
     return null;
 }
 
-fn mergeStyle(a: Terminal.Style, b: Terminal.Style) Terminal.Style {
+fn mergeStyle(a: Surface.Style, b: Surface.Style) Surface.Style {
     return .{
         .bold = a.bold or b.bold,
         .dim = a.dim or b.dim,
@@ -720,13 +719,13 @@ fn mergeStyle(a: Terminal.Style, b: Terminal.Style) Terminal.Style {
     };
 }
 
-fn fillHLine(renderer: *Renderer, x: u16, y: u16, w: u16, char: u21, fg: Terminal.Color, bg: Terminal.Color) void {
+fn fillHLine(surface: *Surface, x: u16, y: u16, w: u16, char: u21, fg: Surface.Color, bg: Surface.Color) void {
     for (0..w) |dx| {
-        renderer.putChar(x +| @as(u16, @intCast(dx)), y, char, fg, bg, .{});
+        surface.putChar(x +| @as(u16, @intCast(dx)), y, char, fg, bg, .{});
     }
 }
 
-fn putStrClipped(renderer: *Renderer, x: u16, y: u16, str: []const u8, max_w: u16, fg: Terminal.Color, bg: Terminal.Color, style: Terminal.Style) u16 {
+fn putStrClipped(surface: *Surface, x: u16, y: u16, str: []const u8, max_w: u16, fg: Surface.Color, bg: Surface.Color, style: Surface.Style) u16 {
     var col: u16 = 0;
     var i: usize = 0;
     while (i < str.len and col < max_w) {
@@ -739,7 +738,7 @@ fn putStrClipped(renderer: *Renderer, x: u16, y: u16, str: []const u8, max_w: u1
             i += byte_len;
             continue;
         };
-        renderer.putChar(x + col, y, codepoint, fg, bg, style);
+        surface.putChar(x + col, y, codepoint, fg, bg, style);
         col += 1;
         i += byte_len;
     }

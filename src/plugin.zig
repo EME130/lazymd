@@ -1,7 +1,6 @@
 const std = @import("std");
 const Editor = @import("Editor.zig");
-const Renderer = @import("Renderer.zig");
-const Terminal = @import("Terminal.zig");
+const Surface = @import("frontend/Surface.zig");
 
 // ── Plugin System ─────────────────────────────────────────────────────
 // lazy-md's extensible plugin architecture.
@@ -27,6 +26,7 @@ pub const EventType = enum {
     cursor_moved,
     command,
     render,
+    agent_command,
 };
 
 pub const PluginEvent = struct {
@@ -44,7 +44,7 @@ pub const CommandDef = struct {
 };
 
 pub const RenderContext = struct {
-    renderer: *Renderer,
+    surface: *Surface,
     x: u16,
     y: u16,
     w: u16,

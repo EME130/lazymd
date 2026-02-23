@@ -173,6 +173,20 @@ kbd {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
+/* ── Screen reader only ──────────────────────────────────────────── */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ── Fade-in animation ───────────────────────────────────────────── */
 
 @keyframes fadeInUp {
@@ -204,4 +218,14 @@ kbd {
 @keyframes pulse {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 0.8; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -1,53 +1,12 @@
 const std = @import("std");
 const posix = std.posix;
+const Surface = @import("frontend/Surface.zig");
 const Self = @This();
 
-// ── Types ──────────────────────────────────────────────────────────────
-
-pub const Color = union(enum) {
-    default,
-    black,
-    red,
-    green,
-    yellow,
-    blue,
-    magenta,
-    cyan,
-    white,
-    bright_black,
-    bright_red,
-    bright_green,
-    bright_yellow,
-    bright_blue,
-    bright_magenta,
-    bright_cyan,
-    bright_white,
-    rgb: struct { r: u8, g: u8, b: u8 },
-    fixed: u8,
-};
-
-pub const Style = packed struct {
-    bold: bool = false,
-    dim: bool = false,
-    italic: bool = false,
-    underline: bool = false,
-    reverse: bool = false,
-    strikethrough: bool = false,
-};
-
-pub const Cell = struct {
-    char: u21 = ' ',
-    fg: Color = .default,
-    bg: Color = .default,
-    style: Style = .{},
-
-    pub fn eql(a: Cell, b: Cell) bool {
-        return a.char == b.char and
-            std.meta.eql(a.fg, b.fg) and
-            std.meta.eql(a.bg, b.bg) and
-            @as(u6, @bitCast(a.style)) == @as(u6, @bitCast(b.style));
-    }
-};
+// Re-export types from Surface.zig for backward compatibility
+pub const Color = Surface.Color;
+pub const Style = Surface.Style;
+pub const Cell = Surface.Cell;
 
 pub const Size = struct {
     rows: u16,

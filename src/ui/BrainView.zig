@@ -1,13 +1,12 @@
 const std = @import("std");
-const Renderer = @import("../Renderer.zig");
-const Terminal = @import("../Terminal.zig");
+const Surface = @import("../frontend/Surface.zig");
 const Input = @import("../Input.zig");
 const Graph = @import("../brain/Graph.zig");
 const Layout = @import("Layout.zig");
 const Self = @This();
 
-const Color = Terminal.Color;
-const Style = Terminal.Style;
+const Color = Surface.Color;
+const Style = Surface.Style;
 
 // ── State ─────────────────────────────────────────────────────────────
 
@@ -207,15 +206,15 @@ fn moveSelection(self: *Self, delta: i32, n: usize) void {
 
 // ── Rendering ─────────────────────────────────────────────────────────
 
-pub fn render(self: *Self, renderer: *Renderer, rect: Layout.Rect) void {
+pub fn render(self: *Self, surface: *Surface, rect: Layout.Rect) void {
     const tc = @import("../themes.zig").currentColors();
     const g = self.graph orelse {
-        renderer.putStr(rect.x + 2, rect.y + 2, "No graph loaded", tc.text, .default, .{});
+        surface.putStr(rect.x + 2, rect.y + 2, "No graph loaded", tc.text, .default, .{});
         return;
     };
 
     if (g.nodeCount() == 0) {
-        renderer.putStr(rect.x + 2, rect.y + 2, "No notes found", tc.text, .default, .{});
+        surface.putStr(rect.x + 2, rect.y + 2, "No notes found", tc.text, .default, .{});
         return;
     }
 
@@ -239,7 +238,7 @@ pub fn render(self: *Self, renderer: *Renderer, rect: Layout.Rect) void {
         const y1 = self.worldToScreenY(pos[edge.from].y, cy, rect.y);
         const x2 = self.worldToScreenX(pos[edge.to].x, cx, rect.x);
         const y2 = self.worldToScreenY(pos[edge.to].y, cy, rect.y);
-        self.drawEdge(renderer, x1, y1, x2, y2, rect, .{ .rgb = .{ .r = 88, .g = 166, .b = 255 } });
+        self.drawEdge(surface, x1, y1, x2, y2, rect, .{ .rgb = .{ .r = 88, .g = 166, .b = 255 } });
     }
 
     // Draw nodes
@@ -259,21 +258,21 @@ pub fn render(self: *Self, renderer: *Renderer, rect: Layout.Rect) void {
         // Draw node label
         const max_name_len = @min(node.name.len, @as(usize, @intCast(rect.x + rect.w -| sx -| 1)));
         if (max_name_len > 0) {
-            renderer.putStr(sx, sy, node.name[0..max_name_len], fg, .default, style);
+            surface.putStr(sx, sy, node.name[0..max_name_len], fg, .default, style);
         }
 
         // Draw dot marker at node position
         if (sx > rect.x) {
             const marker: u21 = if (is_current) 0x25C9 else if (is_selected) 0x25CB else 0x2022; // ◉ ○ •
-            renderer.putChar(sx -| 1, sy, marker, fg, .default, style);
+            surface.putChar(sx -| 1, sy, marker, fg, .default, style);
         }
     }
 
     // Status bar at bottom of rect
-    self.renderStatus(renderer, g, rect, tc);
+    self.renderStatus(surface, g, rect, tc);
 }
 
-fn renderStatus(self: *Self, renderer: *Renderer, g: *Graph, rect: Layout.Rect, tc: anytype) void {
+fn renderStatus(self: *Self, surface: *Surface, g: *Graph, rect: Layout.Rect, tc: anytype) void {
     const status_y = rect.y + rect.h -| 1;
     if (status_y <= rect.y) return;
 
@@ -285,13 +284,13 @@ fn renderStatus(self: *Self, renderer: *Renderer, g: *Graph, rect: Layout.Rect, 
             node.out_links.len,
             node.in_links.len,
         }) catch return;
-        renderer.putStr(rect.x + 1, status_y, msg, tc.title_fg, .default, .{ .bold = true });
+        surface.putStr(rect.x + 1, status_y, msg, tc.title_fg, .default, .{ .bold = true });
     }
 
     // Mode indicator on right
     const mode = if (self.local_mode) " LOCAL " else " GRAPH ";
     const mode_x = rect.x + rect.w -| @as(u16, @intCast(mode.len)) -| 1;
-    renderer.putStr(mode_x, status_y, mode, .bright_magenta, .default, .{ .bold = true });
+    surface.putStr(mode_x, status_y, mode, .bright_magenta, .default, .{ .bold = true });
 }
 
 fn getVisibleNodes(self: *Self, g: *Graph) ![]u16 {
@@ -325,7 +324,7 @@ fn worldToScreenY(self: *Self, wy: f32, cy: f32, base_y: u16) u16 {
     return base_y +| @as(u16, @intFromFloat(@min(sy, 500)));
 }
 
-fn drawEdge(self: *Self, renderer: *Renderer, x1: u16, y1: u16, x2: u16, y2: u16, rect: Layout.Rect, color: Color) void {
+fn drawEdge(self: *Self, surface: *Surface, x1: u16, y1: u16, x2: u16, y2: u16, rect: Layout.Rect, color: Color) void {
     _ = self;
     // Simple dot trail between two points (Bresenham-lite)
     const dx: i32 = @as(i32, @intCast(x2)) - @as(i32, @intCast(x1));
@@ -343,7 +342,7 @@ fn drawEdge(self: *Self, renderer: *Renderer, x1: u16, y1: u16, x2: u16, y2: u16
     for (0..max_steps) |_| {
         const ix: u16 = @intFromFloat(@max(@min(px, @as(f32, @floatFromInt(rect.x + rect.w -| 1))), @as(f32, @floatFromInt(rect.x))));
         const iy: u16 = @intFromFloat(@max(@min(py, @as(f32, @floatFromInt(rect.y + rect.h -| 1))), @as(f32, @floatFromInt(rect.y))));
-        renderer.putChar(ix, iy, 0xB7, color, .default, .{ .dim = true }); // ·
+        surface.putChar(ix, iy, 0xB7, color, .default, .{ .dim = true }); // ·
         px += sx;
         py += sy;
     }

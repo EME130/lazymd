@@ -8,10 +8,10 @@ import s from './index.module.css';
 function Hero(): React.JSX.Element {
   return (
     <header className={s.hero}>
-      <div className={s.heroGlow} />
+      <div className={s.heroGlow} aria-hidden="true" />
       <div className={s.heroInner}>
         <div className={s.heroTag}>
-          <span className={s.heroTagDot} />
+          <span className={s.heroTagDot} aria-hidden="true" />
           Written in Zig. Zero dependencies.
         </div>
         <h1 className={s.heroTitle}>
@@ -41,23 +41,23 @@ function SocialProof(): React.JSX.Element {
     <section className={s.socialProof}>
       <div className={s.socialProofInner}>
         <span className={s.badge}>
-          <span className={s.badgeIcon}>&#9889;</span> Built with Zig
+          <span className={s.badgeIcon} aria-hidden="true">&#9889;</span> Built with Zig
         </span>
-        <span className={s.divider} />
+        <span className={s.divider} aria-hidden="true" />
         <span className={s.badge}>
-          <span className={s.badgeIcon}>&#128268;</span> MCP Protocol
+          <span className={s.badgeIcon} aria-hidden="true">&#128268;</span> MCP Protocol
         </span>
-        <span className={s.divider} />
+        <span className={s.divider} aria-hidden="true" />
         <span className={s.badge}>
-          <span className={s.badgeIcon}>&#9000;</span> Vim Keybindings
+          <span className={s.badgeIcon} aria-hidden="true">&#9000;</span> Vim Keybindings
         </span>
-        <span className={s.divider} />
+        <span className={s.divider} aria-hidden="true" />
         <span className={s.badge}>
-          <span className={s.badgeIcon}>&#128230;</span> Single Binary
+          <span className={s.badgeIcon} aria-hidden="true">&#128230;</span> Single Binary
         </span>
-        <span className={s.divider} />
+        <span className={s.divider} aria-hidden="true" />
         <span className={s.badge}>
-          <span className={s.badgeIcon}>&#129504;</span> Knowledge Graph
+          <span className={s.badgeIcon} aria-hidden="true">&#129504;</span> Knowledge Graph
         </span>
       </div>
     </section>
@@ -91,7 +91,7 @@ function Features(): React.JSX.Element {
         <div className={s.featureGrid}>
           {features.map(({icon, title, desc, wide}) => (
             <article key={title} className={`${s.featureCard} ${wide ? s.featureCardWide : ''}`}>
-              <div className={s.featureIcon}>{icon}</div>
+              <div className={s.featureIcon} aria-hidden="true">{icon}</div>
               <h3>{title}</h3>
               <p>{desc}</p>
             </article>
@@ -115,19 +115,19 @@ function Install(): React.JSX.Element {
         </p>
         <div className={s.installGrid}>
           <div className={s.installCard}>
-            <div className={s.installStep}>1</div>
+            <div className={s.installStep} aria-hidden="true">1</div>
             <h3>Prerequisites</h3>
             <p>Install <a href="https://ziglang.org/download/">Zig</a> 0.15.1 or later from the official site.</p>
           </div>
           <div className={s.installCard}>
-            <div className={s.installStep}>2</div>
+            <div className={s.installStep} aria-hidden="true">2</div>
             <h3>Build</h3>
             <div className={s.codeBlock}>
               <code>{`git clone https://github.com/\nuser/lazy-md.git\ncd lazy-md && zig build`}</code>
             </div>
           </div>
           <div className={s.installCard}>
-            <div className={s.installStep}>3</div>
+            <div className={s.installStep} aria-hidden="true">3</div>
             <h3>Run</h3>
             <div className={s.codeBlock}>
               <code>{`./zig-out/bin/lazy-md myfile.md`}</code>
@@ -154,6 +154,9 @@ function Keybindings(): React.JSX.Element {
           <div className={s.keybindingCard}>
             <h3>Navigation</h3>
             <table>
+              <thead className="sr-only">
+                <tr><th>Keys</th><th>Action</th></tr>
+              </thead>
               <tbody>
                 <tr><td><kbd>h</kbd> <kbd>j</kbd> <kbd>k</kbd> <kbd>l</kbd></td><td>Move cursor</td></tr>
                 <tr><td><kbd>w</kbd> <kbd>b</kbd> <kbd>e</kbd></td><td>Word motions</td></tr>
@@ -166,6 +169,9 @@ function Keybindings(): React.JSX.Element {
           <div className={s.keybindingCard}>
             <h3>Editing</h3>
             <table>
+              <thead className="sr-only">
+                <tr><th>Keys</th><th>Action</th></tr>
+              </thead>
               <tbody>
                 <tr><td><kbd>i</kbd> <kbd>a</kbd> <kbd>o</kbd> <kbd>O</kbd></td><td>Enter insert mode</td></tr>
                 <tr><td><kbd>x</kbd></td><td>Delete character</td></tr>
@@ -178,6 +184,9 @@ function Keybindings(): React.JSX.Element {
           <div className={s.keybindingCard}>
             <h3>Commands</h3>
             <table>
+              <thead className="sr-only">
+                <tr><th>Keys</th><th>Action</th></tr>
+              </thead>
               <tbody>
                 <tr><td><kbd>:w</kbd></td><td>Save file</td></tr>
                 <tr><td><kbd>:q</kbd></td><td>Quit editor</td></tr>
@@ -228,8 +237,8 @@ function MCPSection(): React.JSX.Element {
             </Link>
           </div>
           <div className={s.mcpCode}>
-            <div className={s.mcpCodeHeader}>
-              <span className={`${s.mcpCodeTab} ${s.mcpCodeTabActive}`}>Claude Code</span>
+            <div className={s.mcpCodeHeader} aria-label="Code examples for Claude Code and Gemini CLI">
+              <span className={`${s.mcpCodeTab} ${s.mcpCodeTabActive}`} aria-current="true">Claude Code</span>
               <span className={s.mcpCodeTab}>Gemini CLI</span>
             </div>
             <div className={s.mcpCodeBody}>
@@ -250,7 +259,7 @@ lazy-md --mcp-server myfile.md`}</code>
 function CTASection(): React.JSX.Element {
   return (
     <section className={s.ctaSection}>
-      <div className={s.ctaGlow} />
+      <div className={s.ctaGlow} aria-hidden="true" />
       <h2 className={s.ctaTitle}>Ready to try lazy-md?</h2>
       <p className={s.ctaDesc}>
         Open source, MIT licensed, and built to last.

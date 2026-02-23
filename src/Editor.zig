@@ -3,6 +3,7 @@ const Buffer = @import("Buffer.zig");
 const Input = @import("Input.zig");
 const Key = Input.Key;
 const Renderer = @import("Renderer.zig");
+const Surface = @import("frontend/Surface.zig");
 const Terminal = @import("Terminal.zig");
 const syntax = @import("markdown/syntax.zig");
 const Self = @This();
@@ -612,7 +613,7 @@ fn saveAs(self: *Self, path: []const u8) !void {
 
 // ── Rendering ─────────────────────────────────────────────────────────
 
-pub fn render(self: *Self, renderer: *Renderer) !void {
+pub fn render(self: *Self, surface: *Surface) !void {
     self.updateScroll();
 
     // Reset syntax context for visible lines
@@ -640,7 +641,7 @@ pub fn render(self: *Self, renderer: *Renderer) !void {
 
         if (buf_row >= self.buffer.lineCount()) {
             // Tilde for empty lines
-            renderer.putChar(vx, y, '~', .bright_black, .default, .{});
+            surface.putChar(vx, y, '~', .bright_black, .default, .{});
             continue;
         }
 
@@ -648,8 +649,8 @@ pub fn render(self: *Self, renderer: *Renderer) !void {
         var num_buf: [8]u8 = undefined;
         const num_str = std.fmt.bufPrint(&num_buf, "{d: >3} ", .{buf_row + 1}) catch "??? ";
         const tc_ = @import("themes.zig").currentColors();
-        const num_color: Terminal.Color = if (buf_row == self.cursor_row) tc_.gutter_active else tc_.gutter;
-        renderer.putStr(vx, y, num_str, num_color, .default, .{});
+        const num_color: Surface.Color = if (buf_row == self.cursor_row) tc_.gutter_active else tc_.gutter;
+        surface.putStr(vx, y, num_str, num_color, .default, .{});
 
         // Line content with syntax highlighting
         const line = self.buffer.getLine(buf_row);
@@ -667,7 +668,7 @@ pub fn render(self: *Self, renderer: *Renderer) !void {
             for (text) |ch| {
                 if (col >= self.scroll_col and col - @as(u16, @intCast(self.scroll_col)) + gutter_w < self.view_width) {
                     const screen_col = vx + gutter_w + @as(u16, @intCast(col)) - @as(u16, @intCast(self.scroll_col));
-                    renderer.putChar(screen_col, y, ch, fg, bg, style);
+                    surface.putChar(screen_col, y, ch, fg, bg, style);
                 }
                 col += 1;
             }
@@ -677,19 +678,19 @@ pub fn render(self: *Self, renderer: *Renderer) !void {
         if (buf_row == self.cursor_row) {
             const cx = vx + gutter_w + @as(u16, @intCast(self.cursor_col)) -| @as(u16, @intCast(self.scroll_col));
             if (cx < vx + self.view_width) {
-                const idx = @as(usize, y) * @as(usize, renderer.width) + @as(usize, cx);
-                if (idx < renderer.back.len) {
-                    renderer.back[idx].style.reverse = true;
+                const idx = @as(usize, y) * @as(usize, surface.width) + @as(usize, cx);
+                if (idx < surface.back.len) {
+                    surface.back[idx].style.reverse = true;
                 }
             }
         }
     }
 }
 
-pub fn renderStatusBar(self: *Self, renderer: *Renderer, y: u16) void {
+pub fn renderStatusBar(self: *Self, surface: *Surface, y: u16) void {
     const tc = @import("themes.zig").currentColors();
     // Fill status bar background
-    renderer.fillRow(y, ' ', tc.status_fg, tc.status_bg, .{});
+    surface.fillRow(y, ' ', tc.status_fg, tc.status_bg, .{});
 
     // Mode indicator
     const mode_str = switch (self.mode) {
@@ -697,36 +698,36 @@ pub fn renderStatusBar(self: *Self, renderer: *Renderer, y: u16) void {
         .insert => " INSERT ",
         .command => " COMMAND ",
     };
-    const mode_bg: Terminal.Color = switch (self.mode) {
+    const mode_bg: Surface.Color = switch (self.mode) {
         .normal => tc.mode_normal_bg,
         .insert => tc.mode_insert_bg,
         .command => tc.mode_command_bg,
     };
-    renderer.putStr(0, y, mode_str, tc.title_fg, mode_bg, .{ .bold = true });
+    surface.putStr(0, y, mode_str, tc.title_fg, mode_bg, .{ .bold = true });
 
     // Filename + dirty indicator
     const name = self.file_path orelse "[No File]";
     const dirty_str: []const u8 = if (self.buffer.dirty) " [+]" else "";
     var file_buf: [128]u8 = undefined;
     const file_str = std.fmt.bufPrint(&file_buf, " {s}{s}", .{ name, dirty_str }) catch " ???";
-    renderer.putStr(@intCast(mode_str.len), y, file_str, tc.status_fg, tc.status_bg, .{});
+    surface.putStr(@intCast(mode_str.len), y, file_str, tc.status_fg, tc.status_bg, .{});
 
     // Position info (right-aligned)
     var pos_buf: [32]u8 = undefined;
     const pos_str = std.fmt.bufPrint(&pos_buf, "Ln {d}, Col {d} ", .{ self.cursor_row + 1, self.cursor_col + 1 }) catch "";
-    if (pos_str.len < renderer.width) {
-        renderer.putStr(@intCast(renderer.width - @as(u16, @intCast(pos_str.len))), y, pos_str, tc.status_fg, tc.status_bg, .{});
+    if (pos_str.len < surface.width) {
+        surface.putStr(@intCast(surface.width - @as(u16, @intCast(pos_str.len))), y, pos_str, tc.status_fg, tc.status_bg, .{});
     }
 }
 
-pub fn renderCommandBar(self: *Self, renderer: *Renderer, y: u16) void {
+pub fn renderCommandBar(self: *Self, surface: *Surface, y: u16) void {
     if (self.mode == .command) {
-        renderer.putChar(0, y, ':', .bright_white, .default, .{ .bold = true });
-        renderer.putStr(1, y, self.cmd_buf[0..self.cmd_len], .white, .default, .{});
+        surface.putChar(0, y, ':', .bright_white, .default, .{ .bold = true });
+        surface.putStr(1, y, self.cmd_buf[0..self.cmd_len], .white, .default, .{});
     } else if (self.status.len > 0) {
         const tc2 = @import("themes.zig").currentColors();
-        const fg: Terminal.Color = if (self.status.is_error) tc2.err_color else tc2.success;
-        renderer.putStr(0, y, self.status.slice(), fg, .default, .{});
+        const fg: Surface.Color = if (self.status.is_error) tc2.err_color else tc2.success;
+        surface.putStr(0, y, self.status.slice(), fg, .default, .{});
     }
 }
 
