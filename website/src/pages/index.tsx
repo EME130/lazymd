@@ -22,9 +22,10 @@ function Hero(): React.JSX.Element {
           <em className={s.heroTitleItalic}>of the future.</em>
         </h1>
         <p className={s.heroSubtitle}>
-          Not another Obsidian alternative. LazyMD is the code editor built for
-          the AI era &mdash; where plain text is the universal interface
-          and your editor runs on every surface imaginable.
+          Not another Obsidian alternative. LazyMD is the text editor for
+          philosophers, product engineers, founders, lawyers, researchers
+          &mdash; anyone turning raw thought into structured clarity.
+          Plain text is your alchemy.
         </p>
         <div className={s.heroActions}>
           <Link className={s.btnPrimary} to="/docs/getting-started/installation">
@@ -73,7 +74,7 @@ const philosophy = [
   {
     icon: '\u2728',
     title: 'AI agents speak markdown',
-    desc: 'Every LLM reads, writes, and thinks in plain text. Markdown is the native language of AI-assisted coding \u2014 no proprietary format stands between you and your tools.',
+    desc: 'Every LLM reads, writes, and thinks in plain text. Markdown is the native language of AI-assisted thinking \u2014 no proprietary format stands between you and your tools.',
   },
   {
     icon: '\u2696',
@@ -209,7 +210,7 @@ function Features(): React.JSX.Element {
         </div>
         <h2 className={s.sectionTitle}>Everything you need,<br />nothing you don't.</h2>
         <p className={s.sectionDesc}>
-          Built for developers who live in the terminal. If you use vim, tmux, and the command line daily, LazyMD fits right in.
+          Built for thinkers who live in plain text. Whether you're drafting briefs, shipping products, or writing research &mdash; LazyMD stays out of your way.
         </p>
         <div className={s.featureGrid}>
           {features.map(({icon, title, desc, wide}) => (
@@ -286,18 +287,18 @@ lm --mcp-server myfile.md`}</code>
 const teamFeatures = [
   {
     icon: '\u{1F91D}',
-    title: 'Cooperative Coding',
-    desc: 'Real-time multiplayer editing. See your team\'s cursors, edits, and selections live. Pair program across continents.',
+    title: 'Real-Time Collaboration',
+    desc: 'Real-time multiplayer editing. See your team\'s cursors, edits, and selections live. Work together across continents.',
   },
   {
     icon: '\u{1F3C6}',
     title: 'Rankings & Leaderboards',
-    desc: 'Track contributions, streaks, and impact across your organization. Gamify the development experience.',
+    desc: 'Track contributions, streaks, and impact across your organization. Gamify the writing experience.',
   },
   {
     icon: '\u23F1',
     title: 'Time Tracking',
-    desc: 'Built-in time tracking per file, project, and team. Know where your engineering hours actually go \u2014 no third-party tools.',
+    desc: 'Built-in time tracking per file, project, and team. Know where your hours actually go \u2014 no third-party tools.',
   },
   {
     icon: '\u{1F3E2}',
@@ -410,7 +411,7 @@ export default function Home(): React.JSX.Element {
   return (
     <Layout
       title="The Editor of the Future"
-      description="LazyMD is the code editor built for the AI era. Plain text is the universal interface. Runs everywhere — terminal, web, native apps, any device. Written in Zig with zero dependencies.">
+      description="LazyMD is the text editor for thinkers in the AI era. Plain text is your alchemy. Runs everywhere — terminal, web, native apps, any device. Written in Zig with zero dependencies.">
       <Head>
         <html lang="en" />
       </Head>

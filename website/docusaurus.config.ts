@@ -4,7 +4,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'LazyMD — The Editor of the Future',
-  tagline: 'The code editor built for the AI era. Plain text is the universal interface. Runs everywhere — terminal, web, native apps, any device. Written in Zig with zero dependencies.',
+  tagline: 'The text editor for thinkers in the AI era. Plain text is your alchemy. Runs everywhere — terminal, web, native apps, any device. Written in Zig with zero dependencies.',
   favicon: 'img/favicon.ico',
 
   url: 'https://lazymd.com',
@@ -25,7 +25,7 @@ const config: Config = {
   headTags: [
     {
       tagName: 'meta',
-      attributes: {name: 'keywords', content: 'code editor, editor of the future, AI code editor, plain text editor, markdown editor, terminal editor, vim editor, zig editor, MCP server, LazyMD, lazymd, multi-platform editor, cooperative coding, team editor'},
+      attributes: {name: 'keywords', content: 'text editor, editor of the future, AI text editor, plain text editor, markdown editor, terminal editor, vim editor, zig editor, MCP server, LazyMD, lazymd, multi-platform editor, collaboration, team editor'},
     },
     {
       tagName: 'meta',
@@ -43,8 +43,8 @@ const config: Config = {
         '@type': 'SoftwareApplication',
         name: 'LazyMD',
         url: 'https://lazymd.com',
-        description: 'The code editor built for the AI era. Plain text is the universal interface. Runs everywhere — terminal, web, native apps, any device. Written in Zig with zero dependencies.',
-        applicationCategory: 'DeveloperApplication',
+        description: 'The text editor for thinkers in the AI era. Plain text is your alchemy. Runs everywhere — terminal, web, native apps, any device. Written in Zig with zero dependencies.',
+        applicationCategory: 'BusinessApplication',
         operatingSystem: 'Linux, macOS',
         offers: {
           '@type': 'Offer',
@@ -104,15 +104,15 @@ const config: Config = {
 
   themeConfig: {
     metadata: [
-      {name: 'description', content: 'LazyMD is the code editor built for the AI era. Plain text is the universal interface. Runs everywhere — terminal, web, native apps, any device. Written in Zig with zero dependencies.'},
+      {name: 'description', content: 'LazyMD is the text editor for thinkers in the AI era. Plain text is your alchemy. Runs everywhere — terminal, web, native apps, any device. Written in Zig with zero dependencies.'},
       {property: 'og:type', content: 'website'},
       {property: 'og:site_name', content: 'LazyMD'},
       {property: 'og:title', content: 'LazyMD — The Editor of the Future'},
-      {property: 'og:description', content: 'The code editor built for the AI era. Plain text is the universal interface. Runs everywhere — terminal, web, native apps, any device.'},
+      {property: 'og:description', content: 'The text editor for thinkers in the AI era. Plain text is your alchemy. Runs everywhere — terminal, web, native apps, any device.'},
       {property: 'og:url', content: 'https://lazymd.com'},
       {name: 'twitter:card', content: 'summary_large_image'},
       {name: 'twitter:title', content: 'LazyMD — The Editor of the Future'},
-      {name: 'twitter:description', content: 'The code editor built for the AI era. Plain text is the universal interface. Runs everywhere. Written in Zig.'},
+      {name: 'twitter:description', content: 'The text editor for thinkers in the AI era. Plain text is your alchemy. Runs everywhere. Written in Zig.'},
       {name: 'robots', content: 'index, follow'},
       {name: 'theme-color', content: '#10b981'},
     ],
