@@ -22,7 +22,7 @@ function Hero(): React.JSX.Element {
           <em className={s.heroTitleItalic}>of the future.</em>
         </h1>
         <p className={s.heroSubtitle}>
-          Not another Obsidian alternative. LazyMD is the code editor built for
+          Not another Obsidian alternative. LazyMD is the text editor built for
           the AI era &mdash; where plain text is the universal interface
           and your editor runs on every surface imaginable.
         </p>
@@ -410,7 +410,7 @@ export default function Home(): React.JSX.Element {
   return (
     <Layout
       title="The Editor of the Future"
-      description="LazyMD is the code editor built for the AI era. Plain text is the universal interface. Runs everywhere — terminal, web, native apps, any device. Written in Zig with zero dependencies.">
+      description="LazyMD is the text editor built for the AI era. Plain text is the universal interface. Runs everywhere — terminal, web, native apps, any device. Written in Zig with zero dependencies.">
       <Head>
         <html lang="en" />
       </Head>
