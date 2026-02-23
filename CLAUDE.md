@@ -86,7 +86,7 @@ Add to `~/.gemini/settings.json`:
 
 - Built-in version control support
 - Extensible plugin system
-- ACP agent mode (host LazyMD as coding agent in Zed/JetBrains)
+- ACP agent mode (host LazyMD as agent in Zed/JetBrains)
 
 ## Slash Commands
 

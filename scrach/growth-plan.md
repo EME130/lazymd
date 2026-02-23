@@ -16,7 +16,7 @@
 Before any promotion, the editor must feel **solid** for daily use. Focus on:
 
 - **File sync between devices** — This is Obsidian's #1 pain point (paid Sync at $8/mo). Offer free git-based sync out of the box via your existing `git_sync` plugin. Market this hard.
-- **Smooth vim keybindings** — Your target audience (terminal users) expects flawless vim motions. This is table stakes.
+- **Smooth vim keybindings** — Your target audience expects flawless vim motions. This is table stakes.
 - **Fast startup** — Zig gives you a massive advantage here. Benchmark against Obsidian's Electron startup and flaunt the numbers.
 
 ### 1.2 Fix the README & Branding
@@ -149,7 +149,7 @@ Regular content keeps the project visible:
 - [ ] **MCP ecosystem** — Let AI agents build your second brain
 - [ ] **Speed** — Publish benchmarks: startup time, file open time, memory usage vs Obsidian
 - [ ] **Multiplayer via git** — Real-time(ish) collaboration through git branches
-- [ ] **ACP agent mode** (from your roadmap) — LazyMD as a coding agent host
+- [ ] **ACP agent mode** (from your roadmap) — LazyMD as an agent host
 
 ---
 

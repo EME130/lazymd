@@ -69,12 +69,12 @@
 - Macros
 
 ### AI / MCP
-- ACP agent mode (host LazyMD as a coding agent in Zed/JetBrains)
+- ACP agent mode (host LazyMD as an agent in Zed/JetBrains)
 - AI-assisted writing within the editor
 - Context-aware tool suggestions
 
 ### Collaboration (LazyMD Cloud)
-- Real-time multiplayer editing (cooperative coding)
+- Real-time multiplayer editing (collaboration)
 - Shared vaults with role-based access
 - Rankings and contribution leaderboards
 - Built-in time tracking per file/project
