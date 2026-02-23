@@ -53,7 +53,7 @@ const config: Config = {
         },
         license: 'https://opensource.org/licenses/MIT',
         programmingLanguage: 'Zig',
-        codeRepository: 'https://github.com/user/lazy-md',
+        codeRepository: 'https://github.com/EME130/lazymd',
       }),
     },
     {
@@ -79,7 +79,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/user/lazy-md/tree/main/website/',
+          editUrl: 'https://github.com/EME130/lazymd/tree/main/website/',
         },
         blog: {
           showReadingTime: true,
@@ -87,7 +87,7 @@ const config: Config = {
             type: ['rss', 'atom'],
             xslt: true,
           },
-          editUrl: 'https://github.com/user/lazy-md/tree/main/website/',
+          editUrl: 'https://github.com/EME130/lazymd/tree/main/website/',
         },
         theme: {
           customCss: './src/css/custom.css',
@@ -132,7 +132,7 @@ const config: Config = {
         },
         {to: '/blog', label: 'Blog', position: 'left'},
         {
-          href: 'https://github.com/user/lazy-md',
+          href: 'https://github.com/EME130/lazymd',
           label: 'GitHub',
           position: 'right',
         },
@@ -153,16 +153,16 @@ const config: Config = {
         {
           title: 'Community',
           items: [
-            {label: 'GitHub Discussions', href: 'https://github.com/user/lazy-md/discussions'},
-            {label: 'Issues', href: 'https://github.com/user/lazy-md/issues'},
+            {label: 'GitHub Discussions', href: 'https://github.com/EME130/lazymd/discussions'},
+            {label: 'Issues', href: 'https://github.com/EME130/lazymd/issues'},
           ],
         },
         {
           title: 'More',
           items: [
             {label: 'Blog', to: '/blog'},
-            {label: 'GitHub', href: 'https://github.com/user/lazy-md'},
-            {label: 'Releases', href: 'https://github.com/user/lazy-md/releases'},
+            {label: 'GitHub', href: 'https://github.com/EME130/lazymd'},
+            {label: 'Releases', href: 'https://github.com/EME130/lazymd/releases'},
           ],
         },
       ],

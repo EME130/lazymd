@@ -7,7 +7,7 @@ keywords: [lazy-md plugin development, zig plugin, create plugin, plugin tutoria
 
 # Developing Plugins
 
-See the full [Plugin Development Guide](https://github.com/user/lazy-md/blob/main/docs/PLUGIN_GUIDE.md) for detailed instructions.
+See the full [Plugin Development Guide](https://github.com/EME130/lazymd/blob/main/docs/PLUGIN_GUIDE.md) for detailed instructions.
 
 ## Quick overview
 
