@@ -147,6 +147,19 @@ h1, h2, h3, h4, h5, h6 {
   background-color: #050505;
 }
 
+[data-theme='dark'] .navbar-sidebar__items {
+  background-color: #09090b;
+}
+
+[data-theme='dark'] .navbar-sidebar__item {
+  background-color: #09090b;
+}
+
+[data-theme='dark'] .navbar-sidebar__back {
+  background-color: #09090b;
+  color: #a1a1aa;
+}
+
 [data-theme='dark'] .navbar-sidebar__backdrop {
   background-color: rgba(0, 0, 0, 0.7);
 }
