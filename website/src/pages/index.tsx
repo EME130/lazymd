@@ -382,6 +382,40 @@ function Install(): React.JSX.Element {
   );
 }
 
+/* ── Buy Me a Cigarette ───────────────────────────────────────────── */
+
+const MONERO_ADDRESS =
+  '84Jd3E44j54ZpmH2xAnJ6qJstnDtaJEmvK4pmvR78i5xcLGADnviwDpSa1uZMzCcrkVqH2u8E8hbBU4g4bn9sfB14t5Yjoi';
+
+function BuyMeACigarette(): React.JSX.Element {
+  const [copied, setCopied] = React.useState(false);
+
+  const handleClick = () => {
+    navigator.clipboard.writeText(MONERO_ADDRESS).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+    // Also try to open Monero client
+    window.open(`monero:${MONERO_ADDRESS}`, '_self');
+  };
+
+  return (
+    <section className={s.section} style={{textAlign: 'center'}}>
+      <div className={s.container}>
+        <span className={s.sectionLabel}>Support</span>
+        <h2 className={s.sectionTitle}>Buy me a cigarette.</h2>
+        <p className={s.sectionDesc}>
+          If LazyMD saves you time, consider sending some Monero.
+        </p>
+        <button className={s.btnCigarette} onClick={handleClick}>
+          {copied ? 'Address Copied!' : '\uD83D\uDEAC Buy Me a Cigarette'}
+        </button>
+        <p className={s.moneroAddr}>{MONERO_ADDRESS}</p>
+      </div>
+    </section>
+  );
+}
+
 /* ── CTA ──────────────────────────────────────────────────────────── */
 
 function CTASection(): React.JSX.Element {
@@ -427,6 +461,7 @@ export default function Home(): React.JSX.Element {
         <MCPSection />
         <Teams />
         <Install />
+        <BuyMeACigarette />
         <CTASection />
       </main>
     </Layout>

@@ -759,6 +759,46 @@
   margin-right: auto;
 }
 
+/* ── Buy Me a Cigarette ──────────────────────────────────────────── */
+.btnCigarette {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 32px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #000;
+  text-decoration: none;
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.btnCigarette:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 36px rgba(245, 158, 11, 0.4);
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+}
+.btnCigarette:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+.moneroAddr {
+  margin-top: 20px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.65rem;
+  color: var(--lmd-text-subtle, #666);
+  word-break: break-all;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+  opacity: 0.6;
+}
+
 /* ── Responsive ───────────────────────────────────────────────────── */
 @media (max-width: 960px) {
   .featureGrid { grid-template-columns: repeat(2, 1fr); }
