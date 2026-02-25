@@ -95,23 +95,18 @@ zig fmt src/       # Format code
 
 ## :smoking: Buy Me a Cigarette
 
-If LazyMD saves you time, send some Material Love:
-```
-bitcoin:bc1qzauvea9urya5r087n6mp69jwy5uchmynqcl74l?message=Donations
-```
+If **LazyMD** saves you time, send some Material Love:
 
-```
-monero:84Jd3E44j54ZpmH2xAnJ6qJstnDtaJEmvK4pmvR78i5xcLGADnviwDpSa1uZMzCcrkVqH2u8E8hbBU4g4bn9sfB14t5Yjoi?recipient_name=EME130
-```
+[![Donate with Bitcoin](https://img.shields.io/badge/Donate-Bitcoin-orange?style=for-the-badge&logo=bitcoin&logoColor=white&color=%23F7931A)](bitcoin:bc1qzauvea9urya5r087n6mp69jwy5uchmynqcl74l?message=Donations)
 
-## If you want buy lazyMD and push to the moon 🚀:
-```
-bitcoin:bc1q9kw44zmv7wd52a5dtwnkaa22qksvsxd3cnzsd7?amount=46.77&message=Payment%20link%20for%20LazyMD%2C%20I%20will%20handover%20the%20domain%20and%20my%20shitty%20code..but%20you%20can%20take%20it%20to%20the%20moon%20%3Arocket
-```
+[![Donate with Monero](https://img.shields.io/badge/Donate-Monero-FF6600?style=for-the-badge&logo=monero&logoColor=white)](monero:84Jd3E44j54ZpmH2xAnJ6qJstnDtaJEmvK4pmvR78i5xcLGADnviwDpSa1uZMzCcrkVqH2u8E8hbBU4g4bn9sfB14t5Yjoi?recipient_name=EME130)
 
-```
-monero:8BjRgaThnfZcETtn6tAVF7RQ7rSkQ829MWLTxXymJpYY8A9WDjD59ALaqYLpWPJc8L18Qjpwfds3gUoQh4Rr9TSd3GZZ2BQ?tx_amount=9075.000000000000&recipient_name=EME130&tx_description=Payment%20link%20for%20LazyMD%2C%20I%20will%20handover%20the%20domain%20and%20my%20shitty%20code..but%20you%20can%20take%20it%20to%20the%20moon%20%3Arocket
-```
+
+### If you want to buy LazyMD and push it to the moon 🚀:
+
+[![Buy LazyMD with Bitcoin](https://img.shields.io/badge/Buy_LazyMD-Bitcoin-428813?style=for-the-badge&logo=bitcoin&logoColor=white&color=%23F7931A)](bitcoin:bc1q9kw44zmv7wd52a5dtwnkaa22qksvsxd3cnzsd7?amount=46.77&message=Payment%20link%20for%20LazyMD%2C%20I%20will%20handover%20the%20domain%20and%20my%20shitty%20code..but%20you%20can%20take%20it%20to%20the%20moon%20%3Arocket)
+
+[![Buy LazyMD with Monero](https://img.shields.io/badge/Buy_LazyMD-Monero-FF6600?style=for-the-badge&logo=monero&logoColor=white)](monero:8BjRgaThnfZcETtn6tAVF7RQ7rSkQ829MWLTxXymJpYY8A9WDjD59ALaqYLpWPJc8L18Qjpwfds3gUoQh4Rr9TSd3GZZ2BQ?tx_amount=9075.000000000000&recipient_name=EME130&tx_description=Payment%20link%20for%20LazyMD%2C%20I%20will%20handover%20the%20domain%20and%20my%20shitty%20code..but%20you%20can%20take%20it%20to%20the%20moon%20%3Arocket)
 
 ## License
 
