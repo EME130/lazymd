@@ -101,6 +101,11 @@ If LazyMD saves you time, send some Monero:
 84Jd3E44j54ZpmH2xAnJ6qJstnDtaJEmvK4pmvR78i5xcLGADnviwDpSa1uZMzCcrkVqH2u8E8hbBU4g4bn9sfB14t5Yjoi
 ```
 
+## If you want buy lazyMD and push to the moon then
+```
+bitcoin:bc1q9kw44zmv7wd52a5dtwnkaa22qksvsxd3cnzsd7?amount=46.77&message=LazyMD%20Offer
+```
+
 ## License
 
 MIT
