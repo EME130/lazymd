@@ -2,7 +2,7 @@
 title: Plugin API Reference
 sidebar_position: 4
 description: LazyMD plugin API reference — EventType, PluginInfo, and CommandDef types. Hook into file open, save, buffer changes, mode changes, and cursor events.
-keywords: [LazyMD API, plugin API, event types, command definition, plugin info, zig API reference]
+keywords: [LazyMD API, plugin API, event types, command definition, plugin info, Go API reference]
 ---
 
 # Plugin API Reference
@@ -22,21 +22,21 @@ keywords: [LazyMD API, plugin API, event types, command definition, plugin info,
 
 ## PluginInfo
 
-```zig
-pub const PluginInfo = struct {
-    name: []const u8,
-    version: []const u8,
-    author: []const u8,
-    description: []const u8,
-};
+```go
+type PluginInfo struct {
+    Name        string
+    Version     string
+    Author      string
+    Description string
+}
 ```
 
 ## CommandDef
 
-```zig
-pub const CommandDef = struct {
-    name: []const u8,
-    description: []const u8,
-    handler: *const fn (*PluginEvent) void,
-};
+```go
+type CommandDef struct {
+    Name        string
+    Description string
+    Handler     func(Event)
+}
 ```

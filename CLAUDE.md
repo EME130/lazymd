@@ -1,44 +1,69 @@
 # LazyMD
 
-Terminal-based markdown editor written in Zig. Inspired by lazygit/lazydocker.
+Terminal-based markdown editor written in Go. Inspired by lazygit/lazydocker.
 
 ## Tech Stack
 
-- Language: Zig (0.13.0+)
+- Language: Go (1.24.2+)
+- TUI: Bubble Tea v2 + Lip Gloss + Glamour
 - File format: `.rndm` (100% backward compatible with `.md`)
 
 ## Build Commands
 
 ```bash
-zig build        # Build the project
-zig build run    # Run the editor
-zig build test   # Run tests
+go build ./cmd/lm     # Build the binary
+go run ./cmd/lm       # Run the editor
+go test ./...         # Run all tests
 ```
 
 ## Project Structure
 
 ```
-src/
-  main.zig           # Entry point (TUI + MCP mode dispatch)
-  brain/
-    Graph.zig          # Knowledge graph (nodes, edges, backlinks, BFS)
-    Scanner.zig        # Recursive vault scanner for [[wiki-links]]
-  ui/
-    Layout.zig         # Panel layout (file_tree, editor, preview, brain)
-    Preview.zig        # Rendered markdown preview panel
-    BrainView.zig      # Force-directed ASCII graph panel
-  mcp/
-    Server.zig       # MCP server (JSON-RPC 2.0 over stdio)
-    tools.json       # Tool definitions (embedded at compile time)
+cmd/
+  lm/
+    main.go              # Entry point (TUI, MCP, Web, Agent mode dispatch)
+internal/
+  buffer/
+    buffer.go            # Gap buffer with undo/redo, line tracking, file I/O
+  markdown/
+    parser.go            # Markdown tokenizer (28 token types)
+    syntax.go            # Token colors and theme mapping
   nav/
-    Navigator.zig        # Navigation vtable interface (switchable backend)
-    BuiltinNavigator.zig # Built-in implementation using Buffer
+    navigator.go         # Navigation interface (heading paths, tasks, breadcrumbs)
+  brain/
+    graph.go             # Knowledge graph (nodes, edges, backlinks, BFS)
+    scanner.go           # Recursive vault scanner for [[wiki-links]]
   highlight/
-    Highlighter.zig        # Highlighter vtable interface (switchable backend)
-    BuiltinHighlighter.zig # Keyword-based tokenizer (default backend)
-    languages.zig          # 16 language definitions
-build.zig            # Build configuration
-build.zig.zon        # Package manifest
+    highlighter.go       # Highlighter interface (switchable backend)
+    builtin.go           # Keyword-based tokenizer (default backend)
+    languages.go         # 16 language definitions
+  editor/
+    editor.go            # Vim modal editing, cursor, keybindings
+  plugins/
+    manager.go           # Plugin system (registry, lifecycle, events)
+  themes/
+    themes.go            # Color themes (Tokyo Night, Solarized, etc.)
+  mcp/
+    server.go            # MCP server (JSON-RPC 2.0 over stdio)
+    tools.go             # 22 tool handlers
+  ui/
+    app.go               # Root Bubble Tea model (TUI shell)
+    layout.go            # Panel layout (file_tree, editor, preview, brain)
+    styles.go            # Lip Gloss style definitions
+    filetree.go          # File tree panel
+    preview.go           # Glamour markdown preview panel
+    brainview.go         # Force-directed ASCII graph panel
+    statusbar.go         # Status bar renderer
+    commandbar.go        # Command bar renderer
+  web/
+    server.go            # HTTP + WebSocket server
+    websocket.go         # RFC 6455 WebSocket implementation
+  agent/
+    agent.go             # Agent types, Backend interface, Plugin
+    mcp_backend.go       # MCP stdio backend
+    websocket_backend.go # WebSocket backend
+go.mod
+go.sum
 ```
 
 ## MCP Server Mode
@@ -54,7 +79,7 @@ lm --mcp-server myfile.md    # Start with file preloaded
 
 Document tools: `open_file`, `read_document`, `write_document`, `list_headings`, `edit_section`, `insert_text`, `delete_lines`, `search_content`, `get_structure`
 
-Navigation tools (via switchable `Navigator` vtable):
+Navigation tools (via `Navigator` interface):
 - `read_section` — read section by heading path (e.g. `"Plan/Step 1/Subtask A"`)
 - `list_tasks` — list task checkboxes, optionally scoped to a section and filtered by status
 - `update_task` — toggle a task checkbox done/pending
@@ -90,12 +115,11 @@ Add to `~/.gemini/settings.json`:
 
 ## Slash Commands
 
-Zig dev: `/zig-test`, `/zig-check`, `/zig-build`, `/zig-debug`
-OSS: `/release`, `/changelog`, `/issue-triage`, `/contrib-guide`
+Go dev: `/release`, `/changelog`, `/issue-triage`, `/contrib-guide`
 
 ## Hooks
 
-- `PostToolUse` on `Edit|Write`: auto-runs `zig fmt` on `.zig` files via `.claude/hooks/zig-fmt.sh`
+- `PostToolUse` on `Edit|Write`: auto-runs `gofmt` on `.go` files via `.claude/hooks/go-fmt.sh`
 
 ## Reference Projects
 

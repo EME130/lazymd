@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if echo \"$TOOL_INPUT\" | grep -q 'build.zig.zon'; then echo 'BLOCK: Do not edit build.zig.zon without explicit permission' && exit 2; fi",
+            "command": "if echo \"$TOOL_INPUT\" | grep -q 'go.sum'; then echo 'BLOCK: Do not edit go.sum without explicit permission' && exit 2; fi",
             "timeout": 5
           }
         ]
@@ -33,7 +33,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/zig-fmt.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/go-fmt.sh",
             "timeout": 30
           }
         ]
@@ -43,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && zig build 2>&1 | tail -5",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && go build ./... 2>&1 | tail -5",
             "timeout": 30
           }
         ]

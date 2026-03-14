@@ -1,20 +1,23 @@
 ---
-title: Module Reference
+title: Package Reference
 sidebar_position: 2
-description: Complete module reference for the LazyMD codebase — Terminal, Input, Buffer, Editor, Renderer, Layout, Preview, syntax tokenizer, and plugin system.
-keywords: [LazyMD modules, zig modules, terminal editor internals, buffer module, renderer module, code reference]
+description: Complete package reference for the LazyMD codebase — buffer, markdown, editor, nav, brain, highlight, plugins, themes, ui, mcp, web, and agent packages.
+keywords: [LazyMD packages, Go packages, terminal editor internals, buffer package, code reference]
 ---
 
-# Module Reference
+# Package Reference
 
-| Module | Description |
-|--------|-------------|
-| `Terminal.zig` | POSIX terminal control: raw mode, alternate screen, colors, styles |
-| `Input.zig` | Reads keyboard and mouse events, parses escape sequences |
-| `Buffer.zig` | Gap buffer with undo/redo stack and line tracking |
-| `Editor.zig` | Vim modal editing, cursor management, rendering |
-| `Renderer.zig` | Cell grid with diff-based flush to terminal |
-| `ui/Layout.zig` | 3-panel layout computation and chrome rendering |
-| `ui/Preview.zig` | Markdown-to-ASCII preview rendering |
-| `markdown/syntax.zig` | Markdown tokenizer with 28 token types and color theme |
-| `plugin.zig` | Plugin interface, manager, and helper utilities |
+| Package | Description |
+|---------|-------------|
+| `buffer` | Gap buffer with undo/redo stack and line tracking |
+| `markdown` | Markdown tokenizer with 28 token types and color theme |
+| `editor` | Vim modal editing, cursor management, keybindings |
+| `nav` | Navigation interface (heading paths, tasks, breadcrumbs, sections) |
+| `brain` | Knowledge graph with BFS, backlinks, and vault scanner |
+| `highlight` | Highlighter interface with built-in keyword tokenizer |
+| `plugins` | Plugin system with registry, lifecycle management, and events |
+| `themes` | Color themes (Tokyo Night, Solarized, etc.) |
+| `ui` | Bubble Tea TUI shell, panel layout, file tree, preview, brain view |
+| `mcp` | MCP server with 22 tools over JSON-RPC 2.0 stdio |
+| `web` | HTTP server with RFC 6455 WebSocket support |
+| `agent` | Agent backend interface with MCP stdio and WebSocket implementations |

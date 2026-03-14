@@ -492,6 +492,7 @@ Phases 4 and 5 were merged because: (a) plugins require `PluginEditor` interface
 - Delete `src/` directory (all Zig source)
 - Delete `build.zig`, `build.zig.zon`
 - Update `.claude/hooks/` — replace `zig fmt` hook with `gofmt`
+- Update the `website` with go instead of zig
 - **Deliverable**: Clean Go-only repository
 
 ## Line Count Summary

@@ -1,14 +1,14 @@
 ---
 title: Running Tests
 sidebar_position: 3
-description: How to run the LazyMD test suite with zig build test. Unit tests cover Terminal, Input, Buffer, Editor, Renderer, Layout, Preview, syntax, and plugin modules.
-keywords: [LazyMD tests, zig build test, unit tests, test suite, zig testing]
+description: How to run the LazyMD test suite with go test. Unit tests cover buffer, markdown, nav, brain, highlight, mcp, editor, plugins, themes, ui, web, and agent packages.
+keywords: [LazyMD tests, go test, unit tests, test suite, Go testing]
 ---
 
 # Running Tests
 
 ```bash
-zig build test
+go test ./...
 ```
 
-This runs all unit tests across all modules (Terminal, Input, Buffer, Editor, Renderer, Layout, Preview, syntax, and plugin system).
+This runs all unit tests across all packages (buffer, markdown, nav, brain, highlight, mcp, editor, plugins, themes, ui, web, and agent).

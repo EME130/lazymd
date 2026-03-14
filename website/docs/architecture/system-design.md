@@ -1,35 +1,39 @@
 ---
 title: System Design
 sidebar_position: 1
-description: Architecture overview of LazyMD — gap buffer, double-buffered rendering, zero-dependency Zig design, vtable plugin system, and module separation.
-keywords: [LazyMD architecture, gap buffer, double buffering, zig terminal editor, vtable pattern, system design]
+description: Architecture overview of LazyMD — gap buffer, Bubble Tea TUI, interface-based plugin system, and package separation.
+keywords: [LazyMD architecture, gap buffer, Bubble Tea, Go terminal editor, interface pattern, system design]
 ---
 
 # System Design
 
-lm is built with clean module separation:
+lm is built with clean package separation:
 
 ```
-main.zig  (Event Loop)
-  ├─ Terminal.zig    Raw mode, ANSI escape codes, colors
-  ├─ Input.zig       Key + mouse event parsing
-  ├─ Editor.zig      Vim modes, cursor, scroll
-  │   ├─ Buffer.zig  Gap buffer, undo/redo, file I/O
-  │   └─ markdown/syntax.zig  Tokenizer + theme
-  ├─ ui/Layout.zig   3-panel geometry
-  ├─ ui/Preview.zig  Rendered markdown preview
-  ├─ highlight/
-  │   ├─ Highlighter.zig        Highlighter vtable interface
-  │   ├─ BuiltinHighlighter.zig Keyword-based tokenizer
-  │   └─ languages.zig          16 language definitions
-  ├─ Renderer.zig    Double-buffered cell grid
-  └─ plugin.zig      Plugin system
+cmd/lm/main.go  (Entry Point — mode dispatch)
+  internal/
+    buffer/          Gap buffer, undo/redo, file I/O
+    markdown/        Tokenizer (28 token types) + theme
+    editor/          Vim modes, cursor, keybindings
+    nav/             Navigation interface (headings, tasks, breadcrumbs)
+    brain/           Knowledge graph + vault scanner
+    highlight/
+      highlighter.go       Highlighter interface
+      builtin.go           Keyword-based tokenizer
+      languages.go         16 language definitions
+    plugins/         Plugin system (registry, lifecycle, events)
+    themes/          Color themes
+    ui/              Bubble Tea TUI (app, layout, panels, styles)
+    mcp/             MCP server (JSON-RPC 2.0 over stdio)
+    web/             HTTP + WebSocket server
+    agent/           Agent backend interface + implementations
 ```
 
 ## Key design decisions
 
 - **Gap buffer** — Efficient for insert/delete at cursor position
-- **Double buffering** — Diff-based rendering prevents flicker
-- **Zero dependencies** — Uses only Zig stdlib + POSIX
-- **Vtable plugins** — Type-erased interface for extensibility
-- **Vtable highlighter** — Switchable backend for syntax highlighting (built-in keyword tokenizer or external LSP/tools)
+- **Bubble Tea v2** — Elm Architecture TUI framework for composable models
+- **Lip Gloss** — Declarative terminal styling
+- **Glamour** — Markdown rendering for preview panel
+- **Interface-based plugins** — Go interfaces for extensibility
+- **Interface-based highlighter** — Switchable backend for syntax highlighting

@@ -1,19 +1,19 @@
 ---
 title: Building from Source
 sidebar_position: 2
-description: Build LazyMD from source with Zig — debug builds, release builds, and running directly. Compile the terminal markdown editor yourself.
-keywords: [build LazyMD, zig build, compile from source, debug build, release build, zig project]
+description: Build LazyMD from source with Go — debug builds, release builds, and running directly.
+keywords: [build LazyMD, go build, compile from source, go project]
 ---
 
 # Building from Source
 
 ```bash
-# Debug build
-zig build
+# Build
+go build -o lm ./cmd/lm
 
-# Release build
-zig build -Doptimize=ReleaseSafe
+# Build with optimizations
+go build -ldflags="-s -w" -o lm ./cmd/lm
 
 # Run directly
-zig build run -- myfile.md
+go run ./cmd/lm -- myfile.md
 ```
