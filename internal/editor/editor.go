@@ -8,7 +8,7 @@ import (
 type Mode int
 
 const (
-	ModeNormal  Mode = iota
+	ModeNormal Mode = iota
 	ModeInsert
 	ModeCommand
 )
@@ -27,11 +27,27 @@ func (m Mode) String() string {
 	}
 }
 
+// PluginSummary describes a plugin (avoids circular import with plugins package).
+type PluginSummary struct {
+	Name        string
+	Version     string
+	Description string
+}
+
+// CommandSummary describes a plugin command (avoids circular import with plugins package).
+type CommandSummary struct {
+	Name        string
+	Description string
+	PluginName  string
+}
+
 // CommandExecutor is an interface for plugin command dispatch.
 // This avoids circular imports between editor and plugins packages.
 type CommandExecutor interface {
 	ExecuteCommand(name string, ed PluginEditor, args string) bool
 	Broadcast(eventType string, ed PluginEditor)
+	ListPlugins() []PluginSummary
+	ListCommands() []CommandSummary
 }
 
 // PluginEditor is the interface plugins use to access editor state.
@@ -103,8 +119,8 @@ func (e *EditorModel) MarkChanged() { e.changed = true }
 func (e *EditorModel) Buffer() *buffer.Buffer { return e.Buf }
 func (e *EditorModel) CursorRow() int         { return e.Row }
 func (e *EditorModel) CursorCol() int         { return e.Col }
-func (e *EditorModel) FilePath() string        { return e.File }
-func (e *EditorModel) EditorMode() Mode        { return e.mode }
+func (e *EditorModel) FilePath() string       { return e.File }
+func (e *EditorModel) EditorMode() Mode       { return e.mode }
 
 func (e *EditorModel) SetStatus(msg string, isError bool) {
 	e.Status = StatusMsg{Text: msg, IsError: isError}

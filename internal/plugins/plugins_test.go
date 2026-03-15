@@ -25,11 +25,11 @@ func newMockEditor(content string) *mockEditor {
 	return &mockEditor{buf: buf, file: "test.md"}
 }
 
-func (m *mockEditor) Buffer() *buffer.Buffer    { return m.buf }
-func (m *mockEditor) CursorRow() int             { return m.row }
-func (m *mockEditor) CursorCol() int             { return m.col }
-func (m *mockEditor) FilePath() string            { return m.file }
-func (m *mockEditor) EditorMode() editor.Mode     { return editor.ModeNormal }
+func (m *mockEditor) Buffer() *buffer.Buffer       { return m.buf }
+func (m *mockEditor) CursorRow() int               { return m.row }
+func (m *mockEditor) CursorCol() int               { return m.col }
+func (m *mockEditor) FilePath() string             { return m.file }
+func (m *mockEditor) EditorMode() editor.Mode      { return editor.ModeNormal }
 func (m *mockEditor) SetStatus(msg string, e bool) { m.status = msg; m.isErr = e }
 func (m *mockEditor) SetCursorRow(row int)         { m.row = row }
 func (m *mockEditor) SetCursorCol(col int)         { m.col = col }
@@ -174,5 +174,36 @@ func TestPluginInfoUnique(t *testing.T) {
 			t.Errorf("duplicate plugin name: %s", name)
 		}
 		names[name] = true
+	}
+}
+
+func TestListPlugins(t *testing.T) {
+	pm := NewManager()
+	ed := newMockEditor("")
+	pm.Register(&WordCountPlugin{}, ed)
+	pm.Register(&KanbanPlugin{}, ed)
+
+	summaries := pm.ListPlugins()
+	if len(summaries) != 2 {
+		t.Fatalf("expected 2 plugin summaries, got %d", len(summaries))
+	}
+	if summaries[0].Name != "word-count" {
+		t.Errorf("expected first plugin name 'word-count', got %q", summaries[0].Name)
+	}
+}
+
+func TestListCommands(t *testing.T) {
+	pm := NewManager()
+	ed := newMockEditor("")
+	pm.Register(&KanbanPlugin{}, ed)
+
+	cmds := pm.ListCommands()
+	if len(cmds) != 3 {
+		t.Fatalf("expected 3 command summaries, got %d", len(cmds))
+	}
+	for _, cmd := range cmds {
+		if cmd.PluginName != "kanban" {
+			t.Errorf("expected PluginName 'kanban', got %q", cmd.PluginName)
+		}
 	}
 }

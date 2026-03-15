@@ -124,6 +124,36 @@ func (pm *PluginManager) AllCommands() []CommandDef {
 	return cmds
 }
 
+// ListPlugins returns plugin summaries as editor DTOs.
+func (pm *PluginManager) ListPlugins() []editor.PluginSummary {
+	summaries := make([]editor.PluginSummary, len(pm.plugins))
+	for i, p := range pm.plugins {
+		info := p.Info()
+		summaries[i] = editor.PluginSummary{
+			Name:        info.Name,
+			Version:     info.Version,
+			Description: info.Description,
+		}
+	}
+	return summaries
+}
+
+// ListCommands returns command summaries as editor DTOs.
+func (pm *PluginManager) ListCommands() []editor.CommandSummary {
+	var cmds []editor.CommandSummary
+	for _, p := range pm.plugins {
+		info := p.Info()
+		for _, cmd := range p.Commands() {
+			cmds = append(cmds, editor.CommandSummary{
+				Name:        cmd.Name,
+				Description: cmd.Description,
+				PluginName:  info.Name,
+			})
+		}
+	}
+	return cmds
+}
+
 // RegisterAll registers all built-in plugins.
 func RegisterAll(pm *PluginManager, ed editor.PluginEditor) {
 	for _, p := range AllPlugins() {
