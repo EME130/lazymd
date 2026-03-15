@@ -35,16 +35,20 @@ func RenderStatusBar(ed *editor.EditorModel, width int, styles Styles) string {
 	// Position
 	pos := fmt.Sprintf("Ln %d, Col %d", ed.Row+1, ed.Col+1)
 
-	// Compose: mode | filename ... position
+	// Line count
+	lines := fmt.Sprintf("%d lines", ed.Buf.LineCount())
+
+	// Compose: mode | filename ... lines | position
 	modeW := lipgloss.Width(mode)
-	posW := len(pos)
-	fileW := width - modeW - posW - 3 // 3 for separators/padding
+	posW := lipgloss.Width(pos)
+	linesW := lipgloss.Width(lines)
+	fileW := width - modeW - posW - linesW - 5
 	if fileW < 0 {
 		fileW = 0
 	}
 
 	// Truncate filename if needed
-	if len(file) > fileW {
+	if lipgloss.Width(file) > fileW {
 		if fileW > 3 {
 			file = "..." + file[len(file)-fileW+3:]
 		} else {
@@ -52,16 +56,17 @@ func RenderStatusBar(ed *editor.EditorModel, width int, styles Styles) string {
 		}
 	}
 
-	gap := fileW - len(file)
+	gap := fileW - lipgloss.Width(file)
 	if gap < 0 {
 		gap = 0
 	}
 
-	bar := mode + " " + file + strings.Repeat(" ", gap) + " " + pos
+	bar := mode + " " + file + strings.Repeat(" ", gap) + " " + lines + " " + pos + " "
 
 	// Pad to full width
-	if lipgloss.Width(bar) < width {
-		bar += strings.Repeat(" ", width-lipgloss.Width(bar))
+	barW := lipgloss.Width(bar)
+	if barW < width {
+		bar += strings.Repeat(" ", width-barW)
 	}
 
 	return styles.StatusBar.Width(width).Render(bar)

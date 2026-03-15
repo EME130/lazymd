@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/EME130/lazymd/internal/buffer"
@@ -26,6 +27,9 @@ type AppModel struct {
 	pluginMgr *plugins.PluginManager
 	quitting  bool
 	initFile  string
+
+	// Preview debounce
+	previewSeq int // incremented on each buffer change
 }
 
 // NewApp creates a new AppModel for the TUI.
@@ -65,6 +69,17 @@ type fileLoadMsg struct {
 	path string
 }
 
+// previewTickMsg fires after a debounce delay to trigger preview re-render.
+type previewTickMsg struct {
+	seq int
+}
+
+func previewDebounceCmd(seq int) tea.Cmd {
+	return tea.Tick(250*time.Millisecond, func(time.Time) tea.Msg {
+		return previewTickMsg{seq: seq}
+	})
+}
+
 // Update implements tea.Model.
 func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -74,125 +89,272 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.layout.Compute(m.width, m.height)
 		m.editor.ViewWidth = m.layout.EditorRect.W
 		m.editor.ViewHeight = m.layout.EditorRect.H
-		return m, nil
+		m.preview.Invalidate()
+		m.previewSeq++
+		return m, previewDebounceCmd(m.previewSeq)
 
 	case fileLoadMsg:
 		if err := m.editor.OpenFile(msg.path); err != nil {
 			m.editor.SetStatus(fmt.Sprintf("Failed to open: %v", err), true)
+		} else {
+			m.preview.Invalidate()
+			m.previewSeq++
+			return m, previewDebounceCmd(m.previewSeq)
 		}
 		return m, nil
+
+	case previewTickMsg:
+		// Only re-render if this is the latest debounce
+		if msg.seq == m.previewSeq && m.preview.dirty {
+			m.preview.RenderNow(m.editor.Buf, m.layout.PreviewRect)
+		}
+		return m, nil
+
+	case tea.MouseClickMsg:
+		return m.handleMouseClick(msg)
+
+	case tea.MouseWheelMsg:
+		return m.handleMouseWheel(msg)
 
 	case tea.KeyPressMsg:
 		if m.quitting {
 			return m, nil
 		}
 
-		// Global keys (only in normal mode on editor panel)
-		if m.layout.ActivePanel == PanelEditor && m.editor.Mode() == editor.ModeNormal {
-			switch msg.String() {
-			case "alt+1":
-				m.layout.TogglePanel(PanelFileTree)
-				m.layout.Compute(m.width, m.height)
-				m.editor.ViewWidth = m.layout.EditorRect.W
-				m.editor.ViewHeight = m.layout.EditorRect.H
-				return m, nil
-			case "alt+2":
-				m.layout.TogglePanel(PanelPreview)
-				m.layout.Compute(m.width, m.height)
-				m.editor.ViewWidth = m.layout.EditorRect.W
-				m.editor.ViewHeight = m.layout.EditorRect.H
-				return m, nil
-			case "alt+3":
-				m.layout.TogglePanel(PanelBrain)
-				m.layout.Compute(m.width, m.height)
-				m.editor.ViewWidth = m.layout.EditorRect.W
-				m.editor.ViewHeight = m.layout.EditorRect.H
-				return m, nil
+		return m.handleKeyPress(msg)
+	}
+
+	return m, nil
+}
+
+func (m AppModel) handleMouseClick(msg tea.MouseClickMsg) (tea.Model, tea.Cmd) {
+	// Determine which panel was clicked
+	panel := m.layout.HitTest(msg.X, msg.Y)
+	m.layout.ActivePanel = panel
+
+	switch panel {
+	case PanelEditor:
+		// Click to place cursor
+		bodyY := msg.Y - m.layout.TitleH
+		if bodyY >= 0 && bodyY < m.layout.EditorRect.H {
+			gutterW := 4
+			editorX := msg.X - m.layout.TreeRect.W - gutterW - 1
+			if editorX >= 0 {
+				row := m.editor.ScrollRow + bodyY
+				col := m.editor.ScrollCol + editorX
+				if row < m.editor.Buf.LineCount() {
+					m.editor.Row = row
+					lineLen := m.editor.Buf.LineLen(row)
+					if col > lineLen {
+						col = lineLen
+					}
+					if m.editor.Mode() == editor.ModeNormal && col > 0 && col >= lineLen {
+						col = lineLen - 1
+					}
+					m.editor.Col = col
+					m.editor.DesiredCol = col
+				}
 			}
 		}
 
-		// Global Tab for all panels when not in insert/command mode
-		if m.layout.ActivePanel != PanelEditor || m.editor.Mode() == editor.ModeNormal {
-			if msg.String() == "tab" {
-				m.layout.CyclePanel()
-				return m, nil
-			}
-		}
-
-		// Route input to focused panel
-		switch m.layout.ActivePanel {
-		case PanelEditor:
-			key := teaKeyToEditorKey(msg)
-			m.editor.HandleKey(key)
-
-			if m.editor.ShouldQuit {
-				m.quitting = true
-				return m, tea.Quit
-			}
-
-			// Invalidate preview on buffer change
-			if m.editor.BufferChanged() {
-				m.preview.Invalidate()
-			}
-
-			// Refresh styles if theme changed
-			m.styles = NewStyles()
-
-		case PanelFileTree:
-			switch msg.String() {
-			case "j", "down":
-				m.fileTree.MoveDown()
-			case "k", "up":
-				m.fileTree.MoveUp()
-			case "enter":
+	case PanelFileTree:
+		bodyY := msg.Y - m.layout.TitleH
+		if bodyY >= 0 && bodyY < m.layout.TreeRect.H {
+			idx := m.fileTree.ScrollOff + bodyY
+			if idx < len(m.fileTree.Entries) {
+				m.fileTree.Cursor = idx
+				// Double-click-like: if clicking already selected, open it
 				path := m.fileTree.SelectedPath()
-				if path != "" {
+				if path != "" && !m.fileTree.Entries[idx].IsDir {
 					if err := m.editor.OpenFile(path); err != nil {
 						m.editor.SetStatus(fmt.Sprintf("Failed to open: %v", err), true)
 					} else {
 						m.preview.Invalidate()
+						m.previewSeq++
 						m.layout.ActivePanel = PanelEditor
+						return m, previewDebounceCmd(m.previewSeq)
 					}
 				}
-			case "r":
-				m.fileTree.Scan()
-			}
-
-		case PanelPreview:
-			switch msg.String() {
-			case "j", "down":
-				m.preview.ScrollDown(1)
-			case "k", "up":
-				m.preview.ScrollUp(1)
-			case "d":
-				m.preview.ScrollDown(10)
-			case "u":
-				m.preview.ScrollUp(10)
-			}
-
-		case PanelBrain:
-			switch msg.String() {
-			case "j", "down":
-				m.brain.MoveSelection(1)
-			case "k", "up":
-				m.brain.MoveSelection(-1)
-			case "f":
-				m.brain.LocalMode = !m.brain.LocalMode
-			case "+", "=":
-				m.brain.zoom = min(m.brain.zoom+0.2, 3.0)
-			case "-":
-				m.brain.zoom = max(m.brain.zoom-0.2, 0.3)
-			case "h":
-				m.brain.viewportX -= 3
-			case "l":
-				m.brain.viewportX += 3
 			}
 		}
 
-		return m, nil
+	case PanelPreview:
+		// Just focus — no special click action
+
+	case PanelBrain:
+		// Just focus — no special click action
 	}
 
 	return m, nil
+}
+
+func (m AppModel) handleMouseWheel(msg tea.MouseWheelMsg) (tea.Model, tea.Cmd) {
+	panel := m.layout.HitTest(msg.X, msg.Y)
+	scrollLines := 3
+
+	switch panel {
+	case PanelEditor:
+		switch msg.Button {
+		case tea.MouseWheelUp:
+			m.editor.ScrollRow -= scrollLines
+			if m.editor.ScrollRow < 0 {
+				m.editor.ScrollRow = 0
+			}
+		case tea.MouseWheelDown:
+			maxScroll := m.editor.Buf.LineCount() - 1
+			m.editor.ScrollRow += scrollLines
+			if m.editor.ScrollRow > maxScroll {
+				m.editor.ScrollRow = maxScroll
+			}
+		}
+
+	case PanelFileTree:
+		switch msg.Button {
+		case tea.MouseWheelUp:
+			for range scrollLines {
+				m.fileTree.MoveUp()
+			}
+		case tea.MouseWheelDown:
+			for range scrollLines {
+				m.fileTree.MoveDown()
+			}
+		}
+
+	case PanelPreview:
+		switch msg.Button {
+		case tea.MouseWheelUp:
+			m.preview.ScrollUp(scrollLines)
+		case tea.MouseWheelDown:
+			m.preview.ScrollDown(scrollLines)
+		}
+
+	case PanelBrain:
+		switch msg.Button {
+		case tea.MouseWheelUp:
+			m.brain.MoveSelection(-1)
+		case tea.MouseWheelDown:
+			m.brain.MoveSelection(1)
+		}
+	}
+
+	return m, nil
+}
+
+func (m AppModel) handleKeyPress(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	key := msg.String()
+
+	// Global panel toggles (work from any panel in normal mode or non-editor panels)
+	if m.layout.ActivePanel != PanelEditor || m.editor.Mode() == editor.ModeNormal {
+		switch key {
+		case "alt+1":
+			m.layout.TogglePanel(PanelFileTree)
+			m.layout.Compute(m.width, m.height)
+			m.editor.ViewWidth = m.layout.EditorRect.W
+			m.editor.ViewHeight = m.layout.EditorRect.H
+			return m, nil
+		case "alt+2":
+			m.layout.TogglePanel(PanelPreview)
+			m.layout.Compute(m.width, m.height)
+			m.editor.ViewWidth = m.layout.EditorRect.W
+			m.editor.ViewHeight = m.layout.EditorRect.H
+			m.preview.Invalidate()
+			m.previewSeq++
+			return m, previewDebounceCmd(m.previewSeq)
+		case "alt+3":
+			m.layout.TogglePanel(PanelBrain)
+			m.layout.Compute(m.width, m.height)
+			m.editor.ViewWidth = m.layout.EditorRect.W
+			m.editor.ViewHeight = m.layout.EditorRect.H
+			return m, nil
+		case "tab":
+			m.layout.CyclePanel()
+			return m, nil
+		}
+	}
+
+	// Route input to focused panel
+	var cmd tea.Cmd
+	switch m.layout.ActivePanel {
+	case PanelEditor:
+		edKey := teaKeyToEditorKey(msg)
+		m.editor.HandleKey(edKey)
+		m.editor.UpdateScroll()
+
+		if m.editor.ShouldQuit {
+			m.quitting = true
+			return m, tea.Quit
+		}
+
+		// Debounced preview invalidation on buffer change
+		if m.editor.BufferChanged() {
+			m.preview.Invalidate()
+			m.previewSeq++
+			cmd = previewDebounceCmd(m.previewSeq)
+		}
+
+		// Refresh styles if theme changed
+		m.styles = NewStyles()
+
+	case PanelFileTree:
+		switch key {
+		case "j", "down":
+			m.fileTree.MoveDown()
+		case "k", "up":
+			m.fileTree.MoveUp()
+		case "enter":
+			path := m.fileTree.SelectedPath()
+			if path != "" {
+				if err := m.editor.OpenFile(path); err != nil {
+					m.editor.SetStatus(fmt.Sprintf("Failed to open: %v", err), true)
+				} else {
+					m.preview.Invalidate()
+					m.previewSeq++
+					m.layout.ActivePanel = PanelEditor
+					cmd = previewDebounceCmd(m.previewSeq)
+				}
+			}
+		case "r":
+			m.fileTree.Scan()
+		case "esc":
+			m.layout.ActivePanel = PanelEditor
+		}
+
+	case PanelPreview:
+		switch key {
+		case "j", "down":
+			m.preview.ScrollDown(1)
+		case "k", "up":
+			m.preview.ScrollUp(1)
+		case "d":
+			m.preview.ScrollDown(10)
+		case "u":
+			m.preview.ScrollUp(10)
+		case "esc":
+			m.layout.ActivePanel = PanelEditor
+		}
+
+	case PanelBrain:
+		switch key {
+		case "j", "down":
+			m.brain.MoveSelection(1)
+		case "k", "up":
+			m.brain.MoveSelection(-1)
+		case "f":
+			m.brain.LocalMode = !m.brain.LocalMode
+		case "+", "=":
+			m.brain.zoom = min(m.brain.zoom+0.2, 3.0)
+		case "-":
+			m.brain.zoom = max(m.brain.zoom-0.2, 0.3)
+		case "h":
+			m.brain.viewportX -= 3
+		case "l":
+			m.brain.viewportX += 3
+		case "esc":
+			m.layout.ActivePanel = PanelEditor
+		}
+	}
+
+	return m, cmd
 }
 
 // View implements tea.Model.
@@ -205,22 +367,30 @@ func (m AppModel) View() tea.View {
 		return tea.NewView("Loading...")
 	}
 
-	// Title bar
-	title := m.renderTitleBar()
+	c := themes.CurrentColors()
 
-	// Editor panel
+	// Title bar with panel indicators
+	title := m.renderTitleBar(c)
+
+	// Editor panel (always visible)
 	editorView := m.renderEditor()
 
-	// Body: join panels horizontally
+	// Compose body panels horizontally
 	var panels []string
 	if m.layout.ShowFileTree {
-		panels = append(panels, m.fileTree.View(m.layout.TreeRect))
+		focused := m.layout.ActivePanel == PanelFileTree
+		panels = append(panels, m.renderPanelBox("Files", m.fileTree.View(m.layout.TreeRect), m.layout.TreeRect, focused, c, false))
 	}
-	panels = append(panels, editorView)
+
+	editorFocused := m.layout.ActivePanel == PanelEditor
+	panels = append(panels, m.renderPanelBox(m.editorTitle(), editorView, m.layout.EditorRect, editorFocused, c, true))
+
 	if m.layout.ShowBrain {
-		panels = append(panels, m.brain.View(m.layout.BrainRect))
+		focused := m.layout.ActivePanel == PanelBrain
+		panels = append(panels, m.renderPanelBox("Brain", m.brain.View(m.layout.BrainRect), m.layout.BrainRect, focused, c, false))
 	} else if m.layout.ShowPreview {
-		panels = append(panels, m.preview.View(m.editor.Buf, m.layout.PreviewRect))
+		focused := m.layout.ActivePanel == PanelPreview
+		panels = append(panels, m.renderPanelBox("Preview", m.preview.View(m.editor.Buf, m.layout.PreviewRect), m.layout.PreviewRect, focused, c, false))
 	}
 
 	body := lipgloss.JoinHorizontal(lipgloss.Top, panels...)
@@ -235,33 +405,143 @@ func (m AppModel) View() tea.View {
 	var v tea.View
 	v.SetContent(screen)
 	v.AltScreen = true
+	v.MouseMode = tea.MouseModeCellMotion
 	return v
 }
 
-func (m AppModel) renderTitleBar() string {
+func (m AppModel) editorTitle() string {
+	file := m.editor.File
+	if file == "" {
+		return "Editor"
+	}
+	// Show just the filename
+	parts := strings.Split(file, "/")
+	name := parts[len(parts)-1]
+	if m.editor.Buf.IsDirty() {
+		name += " [+]"
+	}
+	return name
+}
+
+func (m AppModel) renderTitleBar(c *themes.ThemeColors) string {
 	t := themes.Current()
-	title := fmt.Sprintf(" LazyMD — %s ", t.Name)
-	padW := m.width - lipgloss.Width(title)
+
+	// Left: app name
+	logo := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(c.BorderActive)).
+		Bold(true).
+		Render(" lm")
+
+	sep := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(c.TextMuted)).
+		Render(" | ")
+
+	themeName := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(c.Text)).
+		Render(t.Name)
+
+	// Right: panel indicators
+	indicators := m.renderPanelIndicators(c)
+
+	left := logo + sep + themeName
+	leftW := lipgloss.Width(left)
+	rightW := lipgloss.Width(indicators)
+	gap := m.width - leftW - rightW
+	if gap < 0 {
+		gap = 0
+	}
+
+	bar := left + strings.Repeat(" ", gap) + indicators
+	return m.styles.TitleBar.Width(m.width).Render(bar)
+}
+
+func (m AppModel) renderPanelIndicators(c *themes.ThemeColors) string {
+	active := lipgloss.NewStyle().Foreground(lipgloss.Color(c.BorderActive)).Bold(true)
+	inactive := lipgloss.NewStyle().Foreground(lipgloss.Color(c.TextMuted))
+	sep := lipgloss.NewStyle().Foreground(lipgloss.Color(c.TextMuted)).Render(" ")
+
+	fileTreeInd := inactive.Render("[1]Files")
+	previewInd := inactive.Render("[2]Preview")
+	brainInd := inactive.Render("[3]Brain")
+
+	if m.layout.ShowFileTree {
+		fileTreeInd = active.Render("[1]Files")
+	}
+	if m.layout.ShowPreview {
+		previewInd = active.Render("[2]Preview")
+	}
+	if m.layout.ShowBrain {
+		brainInd = active.Render("[3]Brain")
+	}
+
+	return fileTreeInd + sep + previewInd + sep + brainInd + " "
+}
+
+func (m AppModel) renderPanelBox(title, content string, rect Rect, focused bool, c *themes.ThemeColors, isEditor bool) string {
+	_ = isEditor
+
+	// Panel header
+	headerStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(c.TextMuted)).
+		Bold(false)
+	if focused {
+		headerStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(c.BorderActive)).
+			Bold(true)
+	}
+
+	indicator := " "
+	if focused {
+		indicator = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(c.BorderActive)).
+			Render("▌")
+	}
+
+	headerText := indicator + headerStyle.Render(title)
+	headerW := lipgloss.Width(headerText)
+	padW := rect.W - headerW
 	if padW < 0 {
 		padW = 0
 	}
-	return m.styles.TitleBar.Width(m.width).Render(title + strings.Repeat(" ", padW))
+	header := headerText + strings.Repeat(" ", padW)
+
+	// Reduce content height by 1 for header
+	contentH := rect.H - 1
+	if contentH < 0 {
+		contentH = 0
+	}
+
+	// Truncate content to fit
+	lines := strings.Split(content, "\n")
+	if len(lines) > contentH {
+		lines = lines[:contentH]
+	}
+	for len(lines) < contentH {
+		lines = append(lines, strings.Repeat(" ", rect.W))
+	}
+
+	return header + "\n" + strings.Join(lines, "\n")
 }
 
 func (m AppModel) renderEditor() string {
 	ed := m.editor
 	rect := m.layout.EditorRect
-	gutterW := 4 // line number width
+	gutterW := 4
 	contentW := rect.W - gutterW - 1
 	if contentW < 1 {
 		contentW = 1
 	}
 
+	// Account for panel header in available height
+	availH := rect.H - 1
+	if availH < 1 {
+		availH = 1
+	}
+
 	var lines []string
-	for row := 0; row < rect.H; row++ {
+	for row := 0; row < availH; row++ {
 		bufRow := ed.ScrollRow + row
 		if bufRow >= ed.Buf.LineCount() {
-			// Empty line with tilde
 			gutter := m.styles.MutedText.Render(fmt.Sprintf("%*s", gutterW, "~"))
 			lines = append(lines, gutter+strings.Repeat(" ", contentW+1))
 			continue
@@ -277,14 +557,12 @@ func (m AppModel) renderEditor() string {
 
 		// Line content
 		line := ed.Buf.Line(bufRow)
-		// Handle horizontal scroll
 		if ed.ScrollCol > 0 && ed.ScrollCol < len(line) {
 			line = line[ed.ScrollCol:]
 		} else if ed.ScrollCol >= len(line) {
 			line = ""
 		}
 
-		// Truncate to content width
 		if len(line) > contentW {
 			line = line[:contentW]
 		}
@@ -322,13 +600,11 @@ func (m AppModel) renderEditor() string {
 func teaKeyToEditorKey(msg tea.KeyPressMsg) editor.Key {
 	s := msg.String()
 
-	// Check for ctrl combinations
 	if len(s) > 5 && s[:5] == "ctrl+" {
 		ch := rune(s[5])
 		return editor.CtrlKey(ch)
 	}
 
-	// Special keys
 	switch s {
 	case "esc":
 		return editor.SpecialKey(editor.KeyEscape)
@@ -360,12 +636,10 @@ func teaKeyToEditorKey(msg tea.KeyPressMsg) editor.Key {
 		return editor.CharKey(' ')
 	}
 
-	// Regular character
 	runes := []rune(s)
 	if len(runes) == 1 {
 		return editor.CharKey(runes[0])
 	}
 
-	// Unknown key — ignore
 	return editor.Key{}
 }

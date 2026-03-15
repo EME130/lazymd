@@ -21,10 +21,10 @@ type FileEntry struct {
 
 // FileTreeModel manages the file tree panel.
 type FileTreeModel struct {
-	Entries  []FileEntry
-	Cursor   int
+	Entries   []FileEntry
+	Cursor    int
 	ScrollOff int
-	RootDir  string
+	RootDir   string
 }
 
 // NewFileTree creates a file tree model rooted at dir.
@@ -46,7 +46,6 @@ func (ft *FileTreeModel) scanDir(dir string, depth int) {
 		return
 	}
 
-	// Sort: dirs first, then alphabetical
 	sort.Slice(entries, func(i, j int) bool {
 		di, dj := entries[i].IsDir(), entries[j].IsDir()
 		if di != dj {
@@ -57,7 +56,6 @@ func (ft *FileTreeModel) scanDir(dir string, depth int) {
 
 	for _, e := range entries {
 		name := e.Name()
-		// Skip hidden files/dirs
 		if strings.HasPrefix(name, ".") {
 			continue
 		}
@@ -71,7 +69,6 @@ func (ft *FileTreeModel) scanDir(dir string, depth int) {
 				IsDir: true,
 				Depth: depth,
 			})
-			// Don't recurse deeply to keep it fast
 			if depth < 2 {
 				ft.scanDir(fullPath, depth+1)
 			}
@@ -114,23 +111,34 @@ func (ft *FileTreeModel) MoveDown() {
 // View renders the file tree into the given rect dimensions.
 func (ft *FileTreeModel) View(rect Rect) string {
 	c := themes.CurrentColors()
+
+	contentH := rect.H - 1 // account for panel header
+	if contentH < 1 {
+		contentH = 1
+	}
+
 	if len(ft.Entries) == 0 {
-		style := lipgloss.NewStyle().
-			Width(rect.W).Height(rect.H).
-			Foreground(lipgloss.Color(c.TextMuted))
-		return style.Render("  No files found")
+		emptyMsg := lipgloss.NewStyle().
+			Foreground(lipgloss.Color(c.TextMuted)).
+			Render("  No files found")
+		var lines []string
+		lines = append(lines, emptyMsg)
+		for i := 1; i < contentH; i++ {
+			lines = append(lines, strings.Repeat(" ", rect.W))
+		}
+		return strings.Join(lines, "\n")
 	}
 
 	// Ensure cursor is visible
 	if ft.Cursor < ft.ScrollOff {
 		ft.ScrollOff = ft.Cursor
 	}
-	if ft.Cursor >= ft.ScrollOff+rect.H {
-		ft.ScrollOff = ft.Cursor - rect.H + 1
+	if ft.Cursor >= ft.ScrollOff+contentH {
+		ft.ScrollOff = ft.Cursor - contentH + 1
 	}
 
 	var lines []string
-	for i := 0; i < rect.H; i++ {
+	for i := 0; i < contentH; i++ {
 		idx := ft.ScrollOff + i
 		if idx >= len(ft.Entries) {
 			lines = append(lines, strings.Repeat(" ", rect.W))
@@ -139,20 +147,27 @@ func (ft *FileTreeModel) View(rect Rect) string {
 
 		entry := ft.Entries[idx]
 		indent := strings.Repeat("  ", entry.Depth)
-		icon := "📄"
+
+		var icon string
 		if entry.IsDir {
-			icon = "📁"
+			icon = fmt.Sprintf("%s%s ", indent, lipgloss.NewStyle().Foreground(lipgloss.Color(c.H2)).Render(""))
+		} else {
+			icon = fmt.Sprintf("%s%s ", indent, lipgloss.NewStyle().Foreground(lipgloss.Color(c.TextMuted)).Render(""))
 		}
 
-		label := fmt.Sprintf("%s%s %s", indent, icon, entry.Name)
+		label := icon + entry.Name
+		labelW := lipgloss.Width(label)
 
 		// Truncate
-		if len(label) > rect.W-1 {
-			label = label[:rect.W-1]
+		if labelW > rect.W-1 {
+			runes := []rune(label)
+			if len(runes) > rect.W-1 {
+				label = string(runes[:rect.W-1])
+			}
+			labelW = lipgloss.Width(label)
 		}
 
-		// Pad
-		pad := rect.W - lipgloss.Width(label)
+		pad := rect.W - labelW
 		if pad < 0 {
 			pad = 0
 		}
@@ -172,10 +187,5 @@ func (ft *FileTreeModel) View(rect Rect) string {
 		lines = append(lines, line)
 	}
 
-	content := strings.Join(lines, "\n")
-	border := lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder(), false, true, false, false).
-		BorderForeground(lipgloss.Color(c.Border)).
-		Width(rect.W).Height(rect.H)
-	return border.Render(content)
+	return strings.Join(lines, "\n")
 }

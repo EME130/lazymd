@@ -85,8 +85,8 @@ func TestPreviewInvalidate(t *testing.T) {
 	buf := buffer.New()
 	buf.InsertString(0, "# Hello\n\nWorld\n")
 
-	// Render should clear dirty flag
-	p.View(buf, Rect{W: 40, H: 10})
+	// RenderNow should clear dirty flag
+	p.RenderNow(buf, Rect{W: 40, H: 10})
 	if p.dirty {
 		t.Error("expected preview to be clean after render")
 	}

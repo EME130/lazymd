@@ -4,6 +4,10 @@ zig-cache/
 .zig-cache/
 .scrach
 
+# Go build artifacts
+/lm
+/cmd/lm/lm
+
 # Editor (web UI) build artifacts
 editor/node_modules/
 editor/build/

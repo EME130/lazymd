@@ -14,6 +14,8 @@ type PreviewModel struct {
 	rendered  string
 	dirty     bool
 	scrollOff int
+	lastWidth int
+	renderer  *glamour.TermRenderer
 }
 
 // NewPreview creates a new preview model.
@@ -39,6 +41,45 @@ func (p *PreviewModel) ScrollDown(n int) {
 	p.scrollOff += n
 }
 
+// RenderNow performs the glamour render immediately (called from Update on debounce tick).
+func (p *PreviewModel) RenderNow(buf *buffer.Buffer, rect Rect) {
+	if buf.Length() == 0 {
+		p.rendered = ""
+		p.dirty = false
+		return
+	}
+
+	wrapWidth := rect.W - 4
+	if wrapWidth < 20 {
+		wrapWidth = 20
+	}
+
+	// Recreate renderer if width changed or first use
+	if p.renderer == nil || p.lastWidth != wrapWidth {
+		r, err := glamour.NewTermRenderer(
+			glamour.WithAutoStyle(),
+			glamour.WithWordWrap(wrapWidth),
+		)
+		if err == nil {
+			p.renderer = r
+			p.lastWidth = wrapWidth
+		}
+	}
+
+	content := buf.Content()
+	if p.renderer != nil {
+		rendered, err := p.renderer.Render(content)
+		if err == nil {
+			p.rendered = rendered
+		} else {
+			p.rendered = content
+		}
+	} else {
+		p.rendered = content
+	}
+	p.dirty = false
+}
+
 // View renders the markdown preview panel.
 func (p *PreviewModel) View(buf *buffer.Buffer, rect Rect) string {
 	c := themes.CurrentColors()
@@ -50,24 +91,11 @@ func (p *PreviewModel) View(buf *buffer.Buffer, rect Rect) string {
 		return style.Render("  No content to preview")
 	}
 
-	// Re-render markdown if dirty
-	if p.dirty {
-		content := buf.Content()
-		r, err := glamour.NewTermRenderer(
-			glamour.WithAutoStyle(),
-			glamour.WithWordWrap(rect.W-4),
-		)
-		if err == nil {
-			rendered, err := r.Render(content)
-			if err == nil {
-				p.rendered = rendered
-			} else {
-				p.rendered = content
-			}
-		} else {
-			p.rendered = content
-		}
-		p.dirty = false
+	if p.dirty && p.rendered == "" {
+		style := lipgloss.NewStyle().
+			Width(rect.W).Height(rect.H).
+			Foreground(lipgloss.Color(c.TextMuted))
+		return style.Render("  Rendering...")
 	}
 
 	// Split into lines and apply scrolling
@@ -81,17 +109,20 @@ func (p *PreviewModel) View(buf *buffer.Buffer, rect Rect) string {
 		p.scrollOff = 0
 	}
 
+	contentH := rect.H - 1 // account for panel header
+	if contentH < 1 {
+		contentH = 1
+	}
+
 	var visible []string
-	for i := 0; i < rect.H; i++ {
+	for i := 0; i < contentH; i++ {
 		idx := p.scrollOff + i
 		if idx >= len(lines) {
 			visible = append(visible, "")
 			continue
 		}
 		line := lines[idx]
-		// Truncate to width
 		if lipgloss.Width(line) > rect.W-2 {
-			// Simple truncation — glamour output may have ANSI codes
 			runes := []rune(line)
 			if len(runes) > rect.W-2 {
 				line = string(runes[:rect.W-2])
@@ -100,10 +131,5 @@ func (p *PreviewModel) View(buf *buffer.Buffer, rect Rect) string {
 		visible = append(visible, line)
 	}
 
-	content := strings.Join(visible, "\n")
-	border := lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder(), false, false, false, true).
-		BorderForeground(lipgloss.Color(c.Border)).
-		Width(rect.W).Height(rect.H)
-	return border.Render(content)
+	return strings.Join(visible, "\n")
 }

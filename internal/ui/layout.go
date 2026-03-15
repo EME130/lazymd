@@ -37,8 +37,8 @@ type LayoutState struct {
 func NewLayout() LayoutState {
 	return LayoutState{
 		ActivePanel:  PanelEditor,
-		ShowFileTree: false,
-		ShowPreview:  false,
+		ShowFileTree: true,
+		ShowPreview:  true,
 		ShowBrain:    false,
 		TitleH:       1,
 		StatusH:      1,
@@ -47,7 +47,6 @@ func NewLayout() LayoutState {
 }
 
 // Compute recalculates panel dimensions based on terminal size.
-// Algorithm matches Layout.zig: tree_w = min(w/5, 30), right_w = min(w/4, 40).
 func (l *LayoutState) Compute(w, h int) {
 	bodyH := h - l.TitleH - l.StatusH - l.CommandH
 	if bodyH < 1 {
@@ -67,12 +66,12 @@ func (l *LayoutState) Compute(w, h int) {
 
 	rightW := 0
 	if l.ShowPreview || l.ShowBrain {
-		rightW = w / 4
-		if rightW > 40 {
-			rightW = 40
+		rightW = w / 3
+		if rightW > 50 {
+			rightW = 50
 		}
-		if rightW < 10 {
-			rightW = 10
+		if rightW < 15 {
+			rightW = 15
 		}
 	}
 
@@ -101,25 +100,36 @@ func (l *LayoutState) TogglePanel(p Panel) {
 	switch p {
 	case PanelFileTree:
 		l.ShowFileTree = !l.ShowFileTree
+		if !l.ShowFileTree && l.ActivePanel == PanelFileTree {
+			l.ActivePanel = PanelEditor
+		}
 	case PanelPreview:
 		l.ShowPreview = !l.ShowPreview
 		if l.ShowPreview {
 			l.ShowBrain = false
+		}
+		if !l.ShowPreview && l.ActivePanel == PanelPreview {
+			l.ActivePanel = PanelEditor
 		}
 	case PanelBrain:
 		l.ShowBrain = !l.ShowBrain
 		if l.ShowBrain {
 			l.ShowPreview = false
 		}
+		if !l.ShowBrain && l.ActivePanel == PanelBrain {
+			l.ActivePanel = PanelEditor
+		}
 	}
 }
 
 // CyclePanel moves focus to the next visible panel.
 func (l *LayoutState) CyclePanel() {
-	panels := []Panel{PanelEditor}
+	// Build ordered list: FileTree → Editor → Preview/Brain
+	var panels []Panel
 	if l.ShowFileTree {
-		panels = append([]Panel{PanelFileTree}, panels...)
+		panels = append(panels, PanelFileTree)
 	}
+	panels = append(panels, PanelEditor)
 	if l.ShowPreview {
 		panels = append(panels, PanelPreview)
 	}

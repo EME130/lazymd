@@ -4,6 +4,9 @@ import "testing"
 
 func TestLayoutCompute(t *testing.T) {
 	l := NewLayout()
+	// Default layout has file tree and preview on
+	l.ShowFileTree = false
+	l.ShowPreview = false
 	l.Compute(120, 40)
 
 	// No side panels, editor gets full width
@@ -36,6 +39,9 @@ func TestLayoutWithPanels(t *testing.T) {
 
 func TestLayoutToggle(t *testing.T) {
 	l := NewLayout()
+	// Defaults are on, toggle them off first
+	l.ShowFileTree = false
+	l.ShowPreview = false
 
 	l.TogglePanel(PanelFileTree)
 	if !l.ShowFileTree {
@@ -59,6 +65,8 @@ func TestLayoutToggle(t *testing.T) {
 
 func TestLayoutCyclePanel(t *testing.T) {
 	l := NewLayout()
+	l.ShowFileTree = false
+	l.ShowPreview = false
 	l.ActivePanel = PanelEditor
 
 	// Only editor visible, cycle stays on editor
@@ -67,7 +75,8 @@ func TestLayoutCyclePanel(t *testing.T) {
 		t.Errorf("expected PanelEditor, got %d", l.ActivePanel)
 	}
 
-	// Show file tree, cycle should go to file tree
+	// Show file tree, cycle from editor should go to file tree
+	// Order: FileTree → Editor, so Editor cycles to FileTree
 	l.ShowFileTree = true
 	l.ActivePanel = PanelEditor
 	l.CyclePanel()
@@ -76,9 +85,21 @@ func TestLayoutCyclePanel(t *testing.T) {
 	}
 }
 
+func TestLayoutToggleResetsFocus(t *testing.T) {
+	l := NewLayout()
+	l.ActivePanel = PanelFileTree
+
+	// Toggling off the focused panel should reset to editor
+	l.TogglePanel(PanelFileTree)
+	if l.ActivePanel != PanelEditor {
+		t.Errorf("expected focus to return to editor, got %d", l.ActivePanel)
+	}
+}
+
 func TestLayoutHitTest(t *testing.T) {
 	l := NewLayout()
 	l.ShowFileTree = true
+	l.ShowPreview = false
 	l.Compute(120, 40)
 
 	// Click in file tree area
