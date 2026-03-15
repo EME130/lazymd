@@ -1,0 +1,37 @@
+version: 2
+
+builds:
+  - main: ./cmd/lm
+    binary: lm
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: linux
+        goarch: arm64
+
+archives:
+  - format: tar.gz
+    name_template: "lm-{{.Version}}-{{.Os}}-{{.Arch}}"
+
+release:
+  generate_release_notes: true
+
+brews:
+  - repository:
+      owner: EME130
+      name: village-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/EME130/lazymd"
+    description: "Terminal-based markdown editor inspired by lazygit"
+    license: "MIT"
+    install: |
+      bin.install "lm"
+    test: |
+      assert_match version.to_s, shell_output("#{bin}/lm --version")

@@ -14,6 +14,8 @@ import (
 	"github.com/EME130/lazymd/internal/web"
 )
 
+var version = "dev"
+
 func main() {
 	mcpServer := flag.Bool("mcp-server", false, "Start MCP server mode")
 	mcpAlias := flag.Bool("mcp", false, "Start MCP server mode (alias)")
@@ -21,7 +23,13 @@ func main() {
 	port := flag.Int("port", 8080, "Web server port")
 	agentMode := flag.Bool("agent", false, "Start agent mode")
 	demoMode := flag.Bool("demo", false, "Launch with demo vault")
+	showVersion := flag.Bool("version", false, "Print version and exit")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println("lm " + version)
+		return
+	}
 
 	switch {
 	case *mcpServer || *mcpAlias:
