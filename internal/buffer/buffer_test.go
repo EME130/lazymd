@@ -97,3 +97,53 @@ func TestRedo(t *testing.T) {
 		t.Fatalf("expected %q, got %q", "Hello", buf.Line(0))
 	}
 }
+
+func TestSetContent(t *testing.T) {
+	buf := New()
+	buf.InsertString(0, "old content")
+
+	buf.SetContent("Hello\nNew World")
+
+	if buf.LineCount() != 2 {
+		t.Fatalf("expected 2 lines, got %d", buf.LineCount())
+	}
+	if buf.Line(0) != "Hello" {
+		t.Fatalf("expected line 0 = %q, got %q", "Hello", buf.Line(0))
+	}
+	if buf.Line(1) != "New World" {
+		t.Fatalf("expected line 1 = %q, got %q", "New World", buf.Line(1))
+	}
+	if buf.IsDirty() {
+		t.Fatal("expected buffer to not be dirty after SetContent")
+	}
+	if buf.Length() != 15 {
+		t.Fatalf("expected length 15, got %d", buf.Length())
+	}
+}
+
+func TestSetContentClearsUndo(t *testing.T) {
+	buf := New()
+	buf.InsertString(0, "first")
+	buf.InsertString(5, " second")
+
+	buf.SetContent("replaced")
+
+	buf.Undo()
+	if buf.Content() != "replaced" {
+		t.Fatalf("expected undo to be no-op after SetContent, got %q", buf.Content())
+	}
+}
+
+func TestSetContentEmpty(t *testing.T) {
+	buf := New()
+	buf.InsertString(0, "something")
+
+	buf.SetContent("")
+
+	if buf.Length() != 0 {
+		t.Fatalf("expected length 0, got %d", buf.Length())
+	}
+	if buf.LineCount() != 1 {
+		t.Fatalf("expected 1 line, got %d", buf.LineCount())
+	}
+}

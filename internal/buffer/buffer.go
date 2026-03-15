@@ -24,13 +24,13 @@ type undoOp struct {
 
 // Buffer is a gap buffer for efficient text editing with undo/redo support.
 type Buffer struct {
-	data      []byte
-	gapStart  int
-	gapEnd    int
+	data       []byte
+	gapStart   int
+	gapEnd     int
 	lineStarts []int
-	dirty     bool
-	undoStack []undoOp
-	redoStack []undoOp
+	dirty      bool
+	undoStack  []undoOp
+	redoStack  []undoOp
 }
 
 // New creates an empty Buffer.
@@ -271,6 +271,21 @@ func (b *Buffer) LoadFile(path string) error {
 	b.redoStack = nil
 	b.rebuildLineStarts()
 	return nil
+}
+
+// SetContent replaces the buffer content from a string (no disk I/O).
+// Resets undo/redo and marks the buffer as clean.
+func (b *Buffer) SetContent(text string) {
+	data := []byte(text)
+	newCap := len(data) + initialGap
+	b.data = make([]byte, newCap)
+	copy(b.data, data)
+	b.gapStart = len(data)
+	b.gapEnd = newCap
+	b.dirty = false
+	b.undoStack = nil
+	b.redoStack = nil
+	b.rebuildLineStarts()
 }
 
 // SaveFile writes the buffer content to a file.
